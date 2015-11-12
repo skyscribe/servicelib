@@ -13,24 +13,19 @@ bool SyncWorker::doJob(Callable&& call, Callable&& onDone){
 }
 
 void AsyncWorker::blockUntilReady(){
-	std::unique_lock<std::mutex> lock(startLock_);
-	condReady_.wait(lock, [&]() -> bool{
-		return ready_;
-	});
+	while(!ready_)
+		this_thread::sleep_for(chrono::milliseconds(1));
 }
 
 void AsyncWorker::run(){
 	ready_ = 1;
-	condReady_.notify_all();
-
 	while(runFlag_){
 		std::unique_lock<std::mutex> lock(callLock_);
-		//cout << "#cond wait for jobs!" << endl;
 		cond_.wait(lock, [&](){
 			return (!calls_.empty()) || (!runFlag_);
 		});
 
-		//cout << "#run jobs " << endl;
+		cout << "#run jobs " << endl;
 		while (!calls_.empty()){
 			auto it = calls_.begin();
 			it->first();
@@ -38,7 +33,6 @@ void AsyncWorker::run(){
 				it->second();
 			calls_.erase(it);
 		}
-		//cout << "#Job handled!" << endl;
 	};
 }
 
@@ -47,23 +41,19 @@ bool AsyncWorker::doJob(Callable&& call, Callable&& onDone){
 		std::unique_lock<std::mutex> lock(callLock_);
 		calls_.push_back({call, onDone});
 	}
-	cond_.notify_all();	
+	cond_.notify_all();
 	return true;
 }
 
 bool AsyncWorker::doSyncJob(Callable&& call){
-	bool finished = false;
-	std::condition_variable cv;
-
+	atomic<bool> finished(false);
 	doJob(std::forward<Callable>(call), [&]() -> bool{
 		finished = true;
-		cv.notify_all();
 		return true;
 	});
 
-	std::mutex mut;
-	std::unique_lock<std::mutex> lock(mut);
-	cv.wait(lock, [&]{return finished;});
+	while(!finished)
+		this_thread::sleep_for(chrono::milliseconds(10));
 	return true;
 }
 
@@ -77,8 +67,6 @@ void AsyncWorker::stop() {
 	runFlag_ = 0;
 	cond_.notify_all();
 	callLock_.unlock();
-	cout << "joining thread!" << endl;
-
 	thread_.join();
 	cout << "thread stopped now!" << "Jobs:" << calls_.size() << endl;
 }

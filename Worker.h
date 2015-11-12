@@ -15,7 +15,7 @@ public:
 
 class AsyncWorker{
 public:
-	AsyncWorker() : thread_(std::bind(AsyncWorker::run, this)), runFlag_(1){}
+	AsyncWorker() : thread_(std::bind(AsyncWorker::run, this)), runFlag_(1), ready_(0){}
 	~AsyncWorker() {stop();}
 
 	void blockUntilReady();
@@ -26,13 +26,10 @@ public:
 	
 private:
 	std::vector<std::pair<Callable, Callable>> calls_;
-	std::thread thread_;
 
-	std::mutex startLock_;
-	std::condition_variable condReady_;
 	std::atomic<bool> ready_;
-
 	std::condition_variable cond_;
 	std::mutex callLock_;
 	std::atomic<bool> runFlag_;
+	std::thread thread_;
 };
