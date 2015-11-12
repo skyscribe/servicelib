@@ -18,6 +18,7 @@ public:
 	AsyncWorker() : thread_(std::bind(AsyncWorker::run, this)), runFlag_(1){}
 	~AsyncWorker() {stop();}
 
+	void blockUntilReady();
 	void stop();
 	bool doJob(Callable&& call, Callable&& onDone);
 	bool doSyncJob(Callable&& call);
@@ -27,7 +28,11 @@ private:
 	std::vector<std::pair<Callable, Callable>> calls_;
 	std::thread thread_;
 
-	std::mutex callLock_;
+	std::mutex startLock_;
+	std::condition_variable condReady_;
+	std::atomic<bool> ready_;
+
 	std::condition_variable cond_;
+	std::mutex callLock_;
 	std::atomic<bool> runFlag_;
 };

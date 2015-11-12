@@ -8,6 +8,7 @@ InterfaceScheduler::InterfaceScheduler(){}
 void InterfaceScheduler::start(){
 	asyncWorker_.reset(new AsyncWorker());
 	syncWorker_.reset(new SyncWorker());
+	asyncWorker_->blockUntilReady();
 }
 
 void InterfaceScheduler::stop(){
