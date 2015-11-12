@@ -1,4 +1,6 @@
 #include "Worker.h"
+#include <iostream>
+using namespace std;
 
 bool SyncWorker::doJob(Callable&& call, Callable&& onDone){
 	auto ret = call();
@@ -15,10 +17,12 @@ void AsyncWorker::run(){
 			return !(calls_.empty());
 		});
 
-		for (auto& actions : calls_){
-			actions.first();
-			if (actions.second)
-				actions.second();
+		while (!calls_.empty()){
+			auto it = calls_.begin();
+			it->first();
+			if (it->second)
+				it->second();
+			calls_.erase(it);
 		}
 	};
 }
@@ -51,4 +55,5 @@ bool AsyncWorker::doSyncJob(Callable&& call){
 void AsyncWorker::stop() {
 	runFlag_ = 0;
 	thread_.join();
+	cout << "thread stopped now!" << "Jobs:" << calls_.size() << endl;
 }

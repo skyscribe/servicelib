@@ -14,11 +14,8 @@ public:
 	}
 
 	bool doSomethingA(const ParamArgs<int, std::string>& args){
-		int theInt;
-		std::string theStr;
-		std::tie(theInt, theStr) = args.parameters;
 		std::cout << "Method A executed, with parameters:" 
-			<< theInt << "," << theStr
+			<< get<0>(args) << "," << get<1>(args)
 			<< std::endl;
 	}
 

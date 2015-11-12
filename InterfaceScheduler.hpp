@@ -10,9 +10,14 @@ struct ParaArgsBase{};
 
 template <class ... Args>
 struct ParamArgs : public ParaArgsBase{
-	ParamArgs(Args&&... args) : parameters(std::forward<Args>(args)...){}
+	ParamArgs(const Args&... args) : parameters(args...){}
 	std::tuple<Args...> parameters;
 };
+
+template <std::size_t I, class ... Types>
+typename std::tuple_element<I, std::tuple<Types...> >::type const& get(const ParamArgs<Types ...>& args){
+	return std::get<I>(args.parameters);
+}
 
 typedef std::function<bool(const ParaArgsBase&)> CallbackType;
 typedef std::function<bool()> Callable;
@@ -31,17 +36,16 @@ public:
 
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, bool async = false, bool waitForDone = true,
-			Callable&& onCallDone = Callable(), Args&& ... args){
+			Callable&& onCallDone = Callable(), const Args& ... args){
 		auto actIt = actionMapping_.find(idStr);
 		if (actIt == actionMapping_.end()){
 			std::cout << "Non-existent interface to call:" << idStr << std::endl;
 			return false;
 		}else{
-			ParamArgs<Args ...> param(std::forward<Args>(args)...);
-			auto callable = [=, &actIt]() -> bool{
+			return invokeCall([args..., actIt]() -> bool{
+				ParamArgs<Args ...> param(args...);
 				return actIt->second(param);
-			};
-			return invokeCall(callable, async, waitForDone, std::forward<Callable>(onCallDone));
+			}, async, waitForDone, std::forward<Callable>(onCallDone));
 		}
 	}
 
