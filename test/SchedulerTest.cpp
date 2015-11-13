@@ -15,10 +15,10 @@ protected:
 	DemoService service_;
 
 	SchedulerTest() : Test(), service_(sched_) {}
-	virtual void SetUp(){
-		sched_.start();
+	virtual void SetUp() override{
+		sched_.start(1);
 	}
-	virtual void TearDown(){
+	virtual void TearDown() override{
 		sched_.stop(); 
 	}
 };

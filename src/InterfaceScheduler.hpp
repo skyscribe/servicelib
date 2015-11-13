@@ -5,6 +5,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 struct ParaArgsBase{};
 
@@ -22,13 +23,16 @@ typename std::tuple_element<I, std::tuple<Types...> >::type const& get(const Par
 typedef std::function<bool(const ParaArgsBase&)> CallbackType;
 typedef std::function<bool()> Callable;
 class AsyncWorker;
+typedef std::shared_ptr<AsyncWorker> AsyncWorkerPtr;
+
 class SyncWorker;
+const size_t defaultPoolSize = 4;
 
 class InterfaceScheduler{
 public:
 	InterfaceScheduler();
 
-	void start();
+	void start(size_t asyncPoolSize = defaultPoolSize);
 	void stop();
 
 	void registerInterface(const std::string& idStr, CallbackType action);
@@ -51,9 +55,10 @@ public:
 
 private:
 	InterfaceScheduler& operator=(const InterfaceScheduler&) = delete;
+	const AsyncWorkerPtr& getIdleWorker()const;
 
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, Callable&& onDone);
 	std::unordered_map<std::string, CallbackType> actionMapping_;
-	std::shared_ptr<AsyncWorker> asyncWorker_;
+	std::vector<AsyncWorkerPtr> asyncWorkers_;
 	std::shared_ptr<SyncWorker> syncWorker_;
 };

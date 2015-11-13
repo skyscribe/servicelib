@@ -1,18 +1,26 @@
 #include "InterfaceScheduler.hpp"
 #include "Worker.h"
-
 #include <iostream>
+#include <algorithm>
+using namespace std;
 
 InterfaceScheduler::InterfaceScheduler(){}
 
-void InterfaceScheduler::start(){
-	asyncWorker_.reset(new AsyncWorker());
+shared_ptr<AsyncWorker> createAndStartAsyncWorker(){
+	auto worker = make_shared<AsyncWorker>();
+	worker->blockUntilReady();
+	return worker;
+} 
+
+void InterfaceScheduler::start(size_t poolSize_){
 	syncWorker_.reset(new SyncWorker());
-	asyncWorker_->blockUntilReady();
+	for (auto i = 0; i < poolSize_; ++i)
+		asyncWorkers_.push_back(createAndStartAsyncWorker());
 }
 
 void InterfaceScheduler::stop(){
-	asyncWorker_->stop();
+	for(auto worker : asyncWorkers_)
+		worker->stop();
 }
 
 void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action){
@@ -31,7 +39,14 @@ bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone,
 		return syncWorker_->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 	else
 		if (!waitForDone)
-			return asyncWorker_->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
+			return getIdleWorker()->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 		else
-			return asyncWorker_->doSyncJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
+			return getIdleWorker()->doSyncJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
+}
+
+const AsyncWorkerPtr& InterfaceScheduler::getIdleWorker()const{
+	auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
+		return a->getLoad() < b->getLoad();
+	});
+	return *it;
 }

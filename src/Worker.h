@@ -23,7 +23,7 @@ public:
 	bool doJob(Callable&& call, Callable&& onDone);
 	bool doSyncJob(Callable&& call, Callable&& onDone);
 	void run();
-	
+	size_t getLoad();
 private:
 	void scheduleFirstOutstandingJob();
 	std::vector<std::pair<Callable, Callable>> calls_;

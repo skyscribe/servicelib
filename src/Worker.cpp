@@ -86,3 +86,8 @@ void AsyncWorker::stop() {
 	queueLock_.unlock();
 	thread_.join();
 }
+
+size_t AsyncWorker::getLoad(){
+	std::unique_lock<std::mutex> lock(queueLock_);
+	return calls_.size();
+}

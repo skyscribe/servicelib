@@ -15,6 +15,7 @@ set(srcList
 	src/InterfaceScheduler.cpp
 	src/Worker.cpp
 	test/SchedulerTest.cpp
+	test/SchedulePoolTest.cpp
 )
 
 add_executable(ut ${srcList})
