@@ -20,7 +20,6 @@ protected:
 	}
 	virtual void TearDown(){
 		sched_.stop(); 
-		cout << "stopped!" << endl;
 	}
 };
 

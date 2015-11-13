@@ -16,7 +16,7 @@ public:
 class AsyncWorker{
 public:
 	AsyncWorker() : thread_(std::bind(&AsyncWorker::run, this)), active_(1), ready_(0){}
-	~AsyncWorker() {stop();}
+	~AsyncWorker() { if(active_) stop();}
 
 	void blockUntilReady();
 	void stop();

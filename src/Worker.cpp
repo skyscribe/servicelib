@@ -85,5 +85,4 @@ void AsyncWorker::stop() {
 	queueCond_.notify_all();
 	queueLock_.unlock();
 	thread_.join();
-	//cout << "thread stopped now!" << "Jobs:" << calls_.size() << endl;
 }
