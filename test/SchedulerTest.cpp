@@ -1,7 +1,10 @@
 #include "InterfaceScheduler.hpp"
 #include "DemoService.hpp"
-#include "Worker.h" //required for unique_ptr
 #include <iostream>
+#include <chrono>
+#include <memory>
+#include <thread>
+#include <atomic>
 #include "gtest/gtest.h"
 
 using namespace std;
@@ -17,7 +20,7 @@ protected:
 	}
 	virtual void TearDown(){
 		sched_.stop(); 
-		//cout << "stopped!" << endl;
+		cout << "stopped!" << endl;
 	}
 };
 

@@ -13,8 +13,6 @@ void InterfaceScheduler::start(){
 
 void InterfaceScheduler::stop(){
 	asyncWorker_->stop();
-	syncWorker_.release();
-	asyncWorker_.release();
 }
 
 void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action){

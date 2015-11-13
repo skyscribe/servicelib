@@ -14,7 +14,7 @@ include_directories(PUBLIC ${gtestDir})
 set(srcList
 	src/InterfaceScheduler.cpp
 	src/Worker.cpp
-	test/TestService.cpp
+	test/SchedulerTest.cpp
 )
 
 add_executable(ut ${srcList})

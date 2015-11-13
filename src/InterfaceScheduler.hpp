@@ -54,6 +54,6 @@ private:
 
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, Callable&& onDone);
 	std::unordered_map<std::string, CallbackType> actionMapping_;
-	std::unique_ptr<AsyncWorker> asyncWorker_;
-	std::unique_ptr<SyncWorker> syncWorker_;
+	std::shared_ptr<AsyncWorker> asyncWorker_;
+	std::shared_ptr<SyncWorker> syncWorker_;
 };
