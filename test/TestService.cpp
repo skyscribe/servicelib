@@ -17,7 +17,7 @@ protected:
 	}
 	virtual void TearDown(){
 		sched_.stop(); 
-		cout << "stopped!" << endl;
+		//cout << "stopped!" << endl;
 	}
 };
 
@@ -53,22 +53,24 @@ TEST_F(SchedulerTest, callAsyncInterface){
 
 TEST_F(SchedulerTest, asyncExecutionDontBlockNewAsynCall){
 	auto start = chrono::steady_clock::now();
-	atomic<int> var(0);
-	sched_.interfaceCall("doSomethingB", true, false, [&]() -> bool{
+	auto var = make_shared<atomic<int>>(0);
+	*var = 0;
+	sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
 		this_thread::sleep_for(chrono::milliseconds(20));
-		cout << "calling1A" << endl;
-		var = 2;
+		*var = 2;
+		//cout << "calling1A, var=" << *var << endl;
 	}, false, 131);
 
-	sched_.interfaceCall("doSomethingB", true, false, [&]() -> bool{
-		cout << "calling1B" << endl;
-		EXPECT_EQ(var, 2);
-		var = 4;
+	sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
+		//cout << "calling1B, var=" << *var << endl;
+		EXPECT_EQ(*var, 2);
+		*var = 4;
 	}, false, 111);
 	
-	var = 1;
+	*var = 1;
 	auto diff = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start);
 	EXPECT_LT(diff.count(), 200);
+	//cout << "case sync end " << endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
