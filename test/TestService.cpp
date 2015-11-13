@@ -16,7 +16,8 @@ protected:
 		sched_.start();
 	}
 	virtual void TearDown(){
-		sched_.stop();
+		sched_.stop(); 
+		cout << "stopped!" << endl;
 	}
 };
 
@@ -48,6 +49,26 @@ TEST_F(SchedulerTest, callAsyncInterface){
 		this_thread::sleep_for(chrono::milliseconds(10));
 	EXPECT_TRUE(called);
 	EXPECT_EQ(service_.getResult(), "Method B executed with parameters:0,131\n");
+}
+
+TEST_F(SchedulerTest, asyncExecutionDontBlockNewAsynCall){
+	auto start = chrono::steady_clock::now();
+	atomic<int> var(0);
+	sched_.interfaceCall("doSomethingB", true, false, [&]() -> bool{
+		this_thread::sleep_for(chrono::milliseconds(20));
+		cout << "calling1A" << endl;
+		var = 2;
+	}, false, 131);
+
+	sched_.interfaceCall("doSomethingB", true, false, [&]() -> bool{
+		cout << "calling1B" << endl;
+		EXPECT_EQ(var, 2);
+		var = 4;
+	}, false, 111);
+	
+	var = 1;
+	auto diff = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start);
+	EXPECT_LT(diff.count(), 200);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

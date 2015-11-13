@@ -28,10 +28,17 @@ void AsyncWorker::run(){
 		//cout << "#run jobs " << endl;
 		while (!calls_.empty()){
 			auto it = calls_.begin();
-			it->first();
-			if (it->second)
-				it->second();
+
+			//release lock so other jobs can be accepted without blocking
+			Callable action, onDone;
+			std::tie(action, onDone) = (*it);
 			calls_.erase(it);
+
+			callLock_.unlock();
+			action();
+			if (onDone)
+				onDone();
+			callLock_.lock();
 		}
 	};
 }
