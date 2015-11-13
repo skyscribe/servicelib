@@ -2,6 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cassert>
 using namespace std;
 
 bool SyncWorker::doJob(Callable&& call, Callable&& onDone){
@@ -19,36 +20,44 @@ void AsyncWorker::blockUntilReady(){
 
 void AsyncWorker::run(){
 	ready_ = 1;
-	while(runFlag_){
-		std::unique_lock<std::mutex> lock(callLock_);
-		cond_.wait(lock, [&](){
-			return (!calls_.empty()) || (!runFlag_);
-		});
+	while(active_){
+		std::unique_lock<std::mutex> lock(queueLock_);
+		auto shouldSchedule = [&]() -> bool {
+			return (!calls_.empty()) || (!active_);			
+		};
+		queueCond_.wait(lock, shouldSchedule);
 
-		//cout << "#run jobs " << endl;
-		while (!calls_.empty()){
-			auto it = calls_.begin();
-
-			//release lock so other jobs can be accepted without blocking
-			Callable action, onDone;
-			std::tie(action, onDone) = (*it);
-			calls_.erase(it);
-
-			callLock_.unlock();
-			action();
-			if (onDone)
-				onDone();
-			callLock_.lock();
-		}
+		while(!calls_.empty())
+			scheduleFirstOutstandingJob();
 	};
+}
+
+void runTheCall(Callable, Callable);
+void AsyncWorker::scheduleFirstOutstandingJob(){
+	//explicitly copy out to avoid iterator changed asynchronously
+	auto action = calls_.begin()->first;
+	auto onDone = calls_.begin()->second;
+	calls_.erase(calls_.begin());
+
+	//release lock during execution so other jobs can be accepted without blocking
+	queueLock_.unlock();
+	runTheCall(std::move(action), std::move(onDone));
+	queueLock_.lock();
+}
+
+void runTheCall(Callable action, Callable onDone){
+	assert(action);
+	action();
+	if (onDone)
+		onDone();
 }
 
 bool AsyncWorker::doJob(Callable&& call, Callable&& onDone){
 	{
-		std::unique_lock<std::mutex> lock(callLock_);
+		std::unique_lock<std::mutex> lock(queueLock_);
 		calls_.push_back({call, onDone});
 	}
-	cond_.notify_all();
+	queueCond_.notify_all();
 	return true;
 }
 
@@ -66,15 +75,15 @@ bool AsyncWorker::doSyncJob(Callable&& call, Callable&& onDone){
 }
 
 void AsyncWorker::stop() {
-	callLock_.lock();
+	queueLock_.lock();
 	while (!calls_.empty()){
-		callLock_.unlock();
+		queueLock_.unlock();
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		callLock_.lock();
+		queueLock_.lock();
 	}
-	runFlag_ = 0;
-	cond_.notify_all();
-	callLock_.unlock();
+	active_ = 0;
+	queueCond_.notify_all();
+	queueLock_.unlock();
 	thread_.join();
 	//cout << "thread stopped now!" << "Jobs:" << calls_.size() << endl;
 }
