@@ -6,23 +6,31 @@
 #include "gtest/gtest.h"
 using namespace std;
 
-const size_t timeForSingleJob = 10;
-atomic<int> sharedVar(0);
-auto timeConsumingJob = [](const ParamArgs<int>& idx) -> bool{
-	this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
-	sharedVar += get<0>(idx);
+//profiler function
+auto profileFor = [](std::function<void()> call, const std::string& hint){
+	auto start = chrono::steady_clock::now();
+	call();
+	auto diff = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start);	
+	cout << "Time spent on <" << hint << "> is " << diff.count() << " milliseconds" << endl;
 };
 
 class SchedulePoolTest : public ::testing::Test{
 protected:
 	InterfaceScheduler sched_;
 	const size_t poolSize_ = 8;
+	atomic<int> sharedVar_;
+	const size_t timeForSingleJob = 10;
 
 	virtual void SetUp() override{
-		sched_.registerInterface("service", [](const ParaArgsBase& p) -> bool {
-			return timeConsumingJob(static_cast<const ParamArgs<int>&>(p));
+		sharedVar_ = 0;
+		sched_.registerInterface("service", [&](const ParaArgsBase& p) -> bool {
+			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
+			sharedVar_ += get<0>(static_cast<const ParamArgs<int>&>(p));
+			return true;
 		});
-		sched_.start(poolSize_);
+		profileFor([&]{
+			sched_.start(poolSize_);
+		}, "start scheduler");
 	}
 
 	virtual void TearDown() override{
@@ -32,7 +40,7 @@ protected:
 
 TEST_F(SchedulePoolTest, jobsDistributedEvenly){
 	atomic<int> done(0);
-	const size_t jobs = 6;
+	const size_t jobs = 8;
 	auto start = chrono::steady_clock::now();
 
 	for (auto i = 0; i < jobs; ++i){
@@ -41,12 +49,15 @@ TEST_F(SchedulePoolTest, jobsDistributedEvenly){
 		}, 1 << i);
 	}
 
-	while (done != jobs)
-		this_thread::sleep_for(chrono::milliseconds(10));
+	size_t i = 0;
+	for(; (i < 1000) && (done != jobs); ++i)
+		this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
 
 	auto diff = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start);
 	cout << "Thread pool used " << static_cast<float>(diff.count()/timeForSingleJob) << " of single run to finish " 
 		<< jobs << " jobs, elapsed=" << diff.count() << endl; 
+
+	EXPECT_EQ(done, jobs);
 	EXPECT_LT(diff.count(), timeForSingleJob*jobs);
-	EXPECT_EQ(sharedVar, (1 << jobs) - 1);	
+	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);	
 }

@@ -6,16 +6,12 @@ using namespace std;
 
 InterfaceScheduler::InterfaceScheduler(){}
 
-shared_ptr<AsyncWorker> createAndStartAsyncWorker(){
-	auto worker = make_shared<AsyncWorker>();
-	worker->blockUntilReady();
-	return worker;
-} 
-
 void InterfaceScheduler::start(size_t poolSize_){
 	syncWorker_.reset(new SyncWorker());
 	for (auto i = 0; i < poolSize_; ++i)
-		asyncWorkers_.push_back(createAndStartAsyncWorker());
+		asyncWorkers_.push_back(make_shared<AsyncWorker>());
+	for (auto worker : asyncWorkers_)
+		worker->blockUntilReady();
 }
 
 void InterfaceScheduler::stop(){
