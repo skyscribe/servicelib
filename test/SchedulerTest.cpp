@@ -1,5 +1,7 @@
 #include "InterfaceScheduler.hpp"
 #include "DemoService.hpp"
+#include "Helper.hpp"
+
 #include <iostream>
 #include <chrono>
 #include <memory>
@@ -23,22 +25,37 @@ protected:
 	}
 };
 
-TEST_F(SchedulerTest, callSyncInteface){
+TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
 	std::string hint("synchronous call");
-	sched_.interfaceCall("doSomethingA", false, true, Callable(), 2, hint);	
+	thread::id ctxId;
+	sched_.interfaceCall("doSomethingA", false, true, [&]() -> bool{
+		ctxId = this_thread::get_id();
+	}, 2, hint);
+
 	EXPECT_EQ(service_.getResult(), "Method A executed, with parameters:2," + hint + "\n");
+	EXPECT_EQ(ctxId, this_thread::get_id());
 }
 
-TEST_F(SchedulerTest, callSyncIntefaceViaAsync){
+TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithCaller){
 	atomic<bool> called(false);
-	sched_.interfaceCall("doSomethingB", true, true, [&]()->bool{
-		called = true;
-	}, true, 133);
+	thread::id ctxId;
+	const size_t consumedMs = 5;
+
+	size_t dur = profileFor([&]{
+		sched_.interfaceCall("doSomethingB", true, true, [&]()->bool{
+			called = true;
+			ctxId = this_thread::get_id();		
+			this_thread::sleep_for(chrono::milliseconds(consumedMs));
+		}, true, 133);
+	});
+	
+	EXPECT_GT(dur, consumedMs);
 	EXPECT_TRUE(called);
 	EXPECT_EQ(service_.getResult(), "Method B executed with parameters:1,133\n");
+	EXPECT_NE(ctxId, this_thread::get_id());
 }
 
-TEST_F(SchedulerTest, callAsyncInterface){
+TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithoutBlocking){
 	atomic<bool> called(false);
 
 	sched_.interfaceCall("doSomethingB", true, false, [&]()->bool{
@@ -48,30 +65,33 @@ TEST_F(SchedulerTest, callAsyncInterface){
 
 	size_t cnt = 0;
 	while ((!called) && (cnt++ < 100))
-		this_thread::sleep_for(chrono::milliseconds(10));
+		this_thread::sleep_for(chrono::milliseconds(2));
 	EXPECT_TRUE(called);
 	EXPECT_EQ(service_.getResult(), "Method B executed with parameters:0,131\n");
 }
 
-TEST_F(SchedulerTest, asyncExecutionDontBlockNewAsynCall){
+TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 	auto start = chrono::steady_clock::now();
 	auto var = make_shared<atomic<int>>(0);
+	const size_t heavyActionMs = 5;
 	*var = 0;
-	sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
-		this_thread::sleep_for(chrono::milliseconds(20));
-		*var = 2;
-		//cout << "calling1A, var=" << *var << endl;
-	}, false, 131);
 
-	sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
-		//cout << "calling1B, var=" << *var << endl;
-		EXPECT_EQ(*var, 2);
-		*var = 4;
-	}, false, 111);
-	
+	size_t dur = profileFor([&]{
+		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
+			this_thread::sleep_for(chrono::milliseconds(heavyActionMs));
+			*var = 2;
+			//cout << "calling1A, var=" << *var << endl;
+		}, false, 131);
+
+		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
+			//cout << "calling1B, var=" << *var << endl;
+			EXPECT_EQ(*var, 2);
+			*var = 4;
+		}, false, 111);
+	});
+
 	*var = 1;
-	auto diff = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start);
-	EXPECT_LT(diff.count(), 200);
+	EXPECT_LT(dur, heavyActionMs);
 	//cout << "case sync end " << endl;
 }
 

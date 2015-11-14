@@ -44,5 +44,8 @@ const AsyncWorkerPtr& InterfaceScheduler::getIdleWorker()const{
 	auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
 		return a->getLoad() < b->getLoad();
 	});
+	//for (auto worker : asyncWorkers_)
+	//	cout << "Worker<" << worker->getId() << ",load=" << worker->getLoad() << endl;
+	//cout << "selected:" << (*it)->getId() << ",load=" << (*it)->getLoad() << endl;
 	return *it;
 }

@@ -43,6 +43,7 @@ void AsyncWorker::scheduleFirstOutstandingJob(){
 	queueLock_.unlock();
 	runTheCall(std::move(action), std::move(onDone));
 	queueLock_.lock();
+	outstandingJobs_--;
 }
 
 void runTheCall(Callable action, Callable onDone){
@@ -58,6 +59,7 @@ bool AsyncWorker::doJob(Callable&& call, Callable&& onDone){
 		calls_.push_back({call, onDone});
 	}
 	queueCond_.notify_all();
+	outstandingJobs_++;
 	return true;
 }
 
@@ -75,19 +77,22 @@ bool AsyncWorker::doSyncJob(Callable&& call, Callable&& onDone){
 }
 
 void AsyncWorker::stop() {
+	if (!active_)
+		return;
+
 	queueLock_.lock();
+	waitForOutstandingJobsToFinish();
+	active_ = false;
+	queueCond_.notify_all();
+	queueLock_.unlock();
+	
+	thread_.join();
+}
+
+void AsyncWorker::waitForOutstandingJobsToFinish(){
 	while (!calls_.empty()){
 		queueLock_.unlock();
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		queueLock_.lock();
-	}
-	active_ = 0;
-	queueCond_.notify_all();
-	queueLock_.unlock();
-	thread_.join();
-}
-
-size_t AsyncWorker::getLoad(){
-	std::unique_lock<std::mutex> lock(queueLock_);
-	return calls_.size();
+	}	
 }
