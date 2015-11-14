@@ -85,7 +85,7 @@ void AsyncWorker::stop() {
 	active_ = false;
 	queueCond_.notify_all();
 	queueLock_.unlock();
-	
+
 	thread_.join();
 }
 

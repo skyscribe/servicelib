@@ -95,6 +95,11 @@ TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 	//cout << "case sync end " << endl;
 }
 
+TEST_F(SchedulerTest, invokeNotRegisteredCall_NothingCalled){
+	//TODO: catch exception and check the throw behavior - shall have assertion error!
+	EXPECT_FALSE(sched_.interfaceCall("unknown"));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
