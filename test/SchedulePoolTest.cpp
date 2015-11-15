@@ -47,25 +47,31 @@ protected:
 			function<int(int)>&& getParam, function<void()>&& onJobDone, const std::string& desc = "",
 			const std::string& strand = ""){
 		atomic<int> done(0);
-
-		auto doneAction = [&]() -> bool{
-			if (onJobDone) 
-				onJobDone();
-			done++;
-		};
-		auto callTm = profileFor([&]{
-			for (int i = 0; i < jobCnt; ++i)
-				sched_.interfaceCall(jobName, true, false, doneAction, strand, getParam(i));
-		}, desc, false /*don't print*/);
-
-		auto waitForDone = [&]{
-			for(auto i = 0; (i < 1000) && (done != jobCnt); ++i)
-				this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
-		};
-		auto waitTm = profileFor(waitForDone, desc + " - join", false/*don't print*/);
-		
+		auto callTm = scheduleAllJobs(done, jobCnt, jobName, forward<function<int(int)>>(getParam),
+			forward<function<void()>>(onJobDone), desc, strand);
+		auto waitTm = waitForAllJobsDone(done, jobCnt, desc);		
 		EXPECT_EQ(done, jobCnt);
 		return {callTm, waitTm};
+	}
+
+	size_t scheduleAllJobs(atomic<int>& done, size_t jobCnt, const std::string& jobName, 
+			function<int(int)>&& getParam, function<void()>&& onJobDone, const std::string& desc = "",
+			const std::string& strand = ""){
+		return profileFor([&]{
+			for (int i = 0; i < jobCnt; ++i)
+				sched_.interfaceCall(jobName, true, false, [&]()->bool{
+						if (onJobDone)
+							onJobDone();
+						done++;
+					}, strand, getParam(i));
+		}, desc, false /*don't print*/);		
+	}
+
+	size_t waitForAllJobsDone(atomic<int>& done, size_t jobCnt, const std::string& desc){
+		return profileFor([&]{
+				for(auto i = 0; (i < 1000) && (done != jobCnt); ++i)
+					this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
+			}, desc + "-join", false/*dont print*/);
 	}
 };
 
