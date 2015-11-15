@@ -28,10 +28,10 @@ class SyncWorker;
 const size_t defaultPoolSize = 4;
 
 struct CallProperty{
-	bool async;
-	bool waitForDone;
+	bool async; //will the job be scheduled asynchronously (under same context)
+	bool waitForDone; //if interfaceCall will be blocked (for done) or not, will be ignored for async call
 	Callable onCallDone;
-	std::string strand;
+	std::string strand; //calls with same strand will be scheduled by same thread, async only
 };
 
 class InterfaceScheduler{
@@ -44,9 +44,14 @@ public:
 	void registerInterface(const std::string& idStr, CallbackType action);
 	void unRegiterInterface(const std::string& idStr);
 
-	//Schedule a previously registered interface cally by asynchrously or synchronusly, wait for execution
-	// done (waitForDone) or exit after job scheduled, and attach an action after job actually invoked
-	// If a strand is specified, all calls within same strand will be executed sequentially (one after another) 
+	//Schedule a previously registered interface cally by CallProperty (see its definition)
+	template <class ... Args>
+	bool interfaceCall(const std::string& idStr, CallProperty&& prop, const Args& ...args){
+		return interfaceCall<Args ...>(idStr, prop.async, prop.waitForDone, std::forward<Callable>(prop.onCallDone),
+			prop.strand, args...);
+	}
+
+	//Actual call under the hood - Use above wrapper overload as possible!
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, bool async = false, bool waitForDone = true,
 			Callable&& onCallDone = Callable(), const std::string& strand = "", const Args& ... args){
@@ -60,12 +65,6 @@ public:
 				return actIt->second(param);
 			}, async, waitForDone, strand, std::forward<Callable>(onCallDone));
 		}
-	}
-
-	template <class ... Args>
-	bool interfaceCall(const std::string& idStr, CallProperty&& prop, const Args& ...args){
-		return interfaceCall<Args ...>(idStr, prop.async, prop.waitForDone, std::forward<Callable>(prop.onCallDone),
-			prop.strand, args...);
 	}
 
 	void dumpWorkersLoad(std::ostream& collector)const;
