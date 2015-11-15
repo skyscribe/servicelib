@@ -23,4 +23,5 @@ include_directories(PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ut pthread gtest)
 
 add_custom_target(copyFiles COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/runUT.sh ${CMAKE_CURRENT_BINARY_DIR})
-add_custom_target(runUT COMMAND bash runUT.sh WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} DEPENDS ut copyFiles)
+add_custom_target(runStress COMMAND bash runUT.sh 100 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} DEPENDS ut copyFiles)
+add_custom_target(runUT COMMAND bash runUT.sh 1 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} DEPENDS ut copyFiles)

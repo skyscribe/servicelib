@@ -47,6 +47,7 @@ TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithC
 			called = true;
 			ctxId = this_thread::get_id();		
 			this_thread::sleep_for(chrono::milliseconds(consumedMs));
+			//cout << "SyncJob callback happen!" << endl;
 		}, "", true, 133);
 	});
 	

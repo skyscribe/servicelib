@@ -68,9 +68,9 @@ bool AsyncWorker::doSyncJob(Callable&& call, Callable&& onDone){
 	doJob(std::forward<Callable>(call), [&]() -> bool{
 		onDone();
 		finished = true;
+		//cout << "sync job done!" << endl;
 		return true;
 	});
-
 	while(!finished)
 		this_thread::sleep_for(chrono::milliseconds(10));
 	return true;
