@@ -19,12 +19,20 @@ protected:
 	atomic<int> sharedVar_;
 	const size_t timeForSingleJob = 20;
 
+	std::mutex lock_;
+	std::vector<std::pair<int, thread::id>> threadMapping_;
+
 	virtual void SetUp() override{
 		sharedVar_ = 0;
-		sched_.registerInterface("service", [&](const ParaArgsBase& p) -> bool {
+		sched_.registerInterface("heavy", [&](const ParaArgsBase& p) -> bool {
 			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
 			sharedVar_ += get<0>(static_cast<const ParamArgs<int>&>(p));
 			return true;
+		});
+		registerInterfaceFor<int>(sched_, "light", [&](const ParamArgs<int> p)->bool{
+			lock_.lock();
+			threadMapping_.push_back({get<0>(p), this_thread::get_id()});
+			lock_.unlock();
 		});
 		profileFor([&]{
 			sched_.start(poolSize_);
@@ -46,12 +54,12 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 
 	auto tm = profileFor([&]{
 		for (auto i = 0; i < jobs; ++i){
-			sched_.interfaceCall("service", true, false, [&]() -> bool{
+			sched_.interfaceCall("heavy", true, false, [&]() -> bool{
 				done++;
 				lock.lock();
 				idsList.insert(this_thread::get_id());
 				lock.unlock();
-			}, 1 << i);
+			}, "", 1 << i);
 		}
 
 		size_t i = 0;
@@ -63,4 +71,24 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	EXPECT_LT(tm, timeForSingleJob*jobs);
 	EXPECT_EQ(idsList.size(), jobs);
 	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);	
+}
+
+TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
+	atomic<int> done(0);
+	const size_t jobs = poolSize_;
+
+	auto tm = profileFor([&]{
+		for (auto i = 0; i < jobs; ++i)
+			sched_.interfaceCall("light", true, false, [&]() -> bool{
+				done++;
+			}, "strand", 1 << i);
+		while (done != jobs)
+			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
+	}, "", false);
+
+	EXPECT_EQ(threadMapping_.size(), jobs);
+	std::set<thread::id> idSets;
+	for (auto item : threadMapping_)
+		idSets.insert(item.second);
+	EXPECT_EQ(idSets.size(), 1);
 }

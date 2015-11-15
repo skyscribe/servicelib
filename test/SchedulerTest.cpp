@@ -30,7 +30,7 @@ TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
 	thread::id ctxId;
 	sched_.interfaceCall("doSomethingA", false, true, [&]() -> bool{
 		ctxId = this_thread::get_id();
-	}, 2, hint);
+	}, "", 2, hint);
 
 	EXPECT_EQ(service_.getResult(), "Method A executed, with parameters:2," + hint + "\n");
 	EXPECT_EQ(ctxId, this_thread::get_id());
@@ -46,7 +46,7 @@ TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithC
 			called = true;
 			ctxId = this_thread::get_id();		
 			this_thread::sleep_for(chrono::milliseconds(consumedMs));
-		}, true, 133);
+		}, "", true, 133);
 	});
 	
 	EXPECT_GT(dur, consumedMs);
@@ -61,7 +61,7 @@ TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithou
 	sched_.interfaceCall("doSomethingB", true, false, [&]()->bool{
 		//std::cout << "Calling B asynchronously done" << std::endl;
 		called = true;
-	}, false, 131);
+	}, "", false, 131);
 
 	size_t cnt = 0;
 	while ((!called) && (cnt++ < 100))
@@ -81,13 +81,13 @@ TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 			this_thread::sleep_for(chrono::milliseconds(heavyActionMs));
 			*var = 2;
 			//cout << "calling1A, var=" << *var << endl;
-		}, false, 131);
+		}, "", false, 131);
 
 		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
 			//cout << "calling1B, var=" << *var << endl;
 			EXPECT_EQ(*var, 2);
 			*var = 4;
-		}, false, 111);
+		}, "", false, 111);
 	});
 
 	*var = 1;

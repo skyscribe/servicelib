@@ -35,20 +35,12 @@ public:
 	void start(size_t asyncPoolSize = defaultPoolSize);
 	void stop();
 
-	template <class ... Args, class ActionType>
-	void registerInterfaceFor(const std::string& idStr, ActionType action){
-		registerInterface(idStr, [=](const ParaArgsBase& p) -> bool{
-			typedef ParamArgs<Args ...> ActualType;
-			return action(static_cast<const ActualType&>(p));
-		});
-	}
-
 	void registerInterface(const std::string& idStr, CallbackType action);
 	void unRegiterInterface(const std::string& idStr);
 
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, bool async = false, bool waitForDone = true,
-			Callable&& onCallDone = Callable(), const Args& ... args){
+			Callable&& onCallDone = Callable(), const std::string& strand = "", const Args& ... args){
 		auto actIt = actionMapping_.find(idStr);
 		if (actIt == actionMapping_.end()){
 			std::cout << "Non-existent interface to call:" << idStr << std::endl;
@@ -57,16 +49,20 @@ public:
 			return invokeCall([args..., actIt]() -> bool{
 				ParamArgs<Args ...> param(args...);
 				return actIt->second(param);
-			}, async, waitForDone, std::forward<Callable>(onCallDone));
+			}, async, waitForDone, strand, std::forward<Callable>(onCallDone));
 		}
 	}
 
 private:
 	InterfaceScheduler& operator=(const InterfaceScheduler&) = delete;
-	const AsyncWorkerPtr& getIdleWorker()const;
+	const AsyncWorkerPtr& getWorkerForSchedule(const std::string& strand);
+	const AsyncWorkerPtr& getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle);
 
-	bool invokeCall(Callable&& cb, bool async, bool waitForDone, Callable&& onDone);
+	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
+
 	std::unordered_map<std::string, CallbackType> actionMapping_;
 	std::vector<AsyncWorkerPtr> asyncWorkers_;
 	std::shared_ptr<SyncWorker> syncWorker_;
+
+	std::unordered_map<std::string, AsyncWorkerPtr> strands_;
 };

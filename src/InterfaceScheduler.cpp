@@ -30,22 +30,34 @@ void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
 		std::cout << "Non-existent interface type:" << idStr << std::endl;
 }
 
-bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, Callable&& onDone){
+bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone){
 	if (!async)
 		return syncWorker_->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 	else
 		if (!waitForDone)
-			return getIdleWorker()->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
+			return getWorkerForSchedule(strand)->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 		else
-			return getIdleWorker()->doSyncJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
+			return getWorkerForSchedule(strand)->doSyncJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 }
 
-const AsyncWorkerPtr& InterfaceScheduler::getIdleWorker()const{
+const AsyncWorkerPtr& InterfaceScheduler::getWorkerForSchedule(const std::string& strand){
 	auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
 		return a->getLoad() < b->getLoad();
 	});
+	
+	if (strand.empty())
+		return *it;
+	else
+		return getStrandWorkerForSchedule(strand, *it);
+
 	//for (auto worker : asyncWorkers_)
 	//	cout << "Worker<" << worker->getId() << ",load=" << worker->getLoad() << endl;
 	//cout << "selected:" << (*it)->getId() << ",load=" << (*it)->getLoad() << endl;
 	return *it;
+}
+
+const AsyncWorkerPtr& InterfaceScheduler::getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle){
+	if (strands_.find(strand) == strands_.end())
+		strands_[strand] = idle;
+	return strands_[strand];
 }
