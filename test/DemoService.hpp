@@ -6,12 +6,10 @@
 class DemoService{
 public:
 	DemoService(InterfaceScheduler& sched) : scheduler_(sched){
-		scheduler_.registerInterface("doSomethingA", [this](const ParaArgsBase& arg) -> bool{
-			return this->doSomethingA(static_cast<const ParamArgs<int, std::string>&>(arg));
-		});
-		scheduler_.registerInterface("doSomethingB", [this](const ParaArgsBase& arg) -> bool{
-			return doSomethingB(static_cast<const ParamArgs<bool, int>&>(arg));
-		});
+		scheduler_.registerInterfaceFor<int, std::string>("doSomethingA", 
+			std::bind(&DemoService::doSomethingA, this, std::placeholders::_1));
+		scheduler_.registerInterfaceFor<bool, int>("doSomethingB",
+			std::bind(&DemoService::doSomethingB, this, std::placeholders::_1));
 	}
 
 	bool doSomethingA(const ParamArgs<int, std::string>& args){

@@ -35,6 +35,14 @@ public:
 	void start(size_t asyncPoolSize = defaultPoolSize);
 	void stop();
 
+	template <class ... Args, class ActionType>
+	void registerInterfaceFor(const std::string& idStr, ActionType action){
+		registerInterface(idStr, [=](const ParaArgsBase& p) -> bool{
+			typedef ParamArgs<Args ...> ActualType;
+			return action(static_cast<const ActualType&>(p));
+		});
+	}
+
 	void registerInterface(const std::string& idStr, CallbackType action);
 	void unRegiterInterface(const std::string& idStr);
 

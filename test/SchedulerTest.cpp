@@ -100,6 +100,14 @@ TEST_F(SchedulerTest, invokeNotRegisteredCall_NothingCalled){
 	EXPECT_FALSE(sched_.interfaceCall("unknown"));
 }
 
+/* Below code won't pass under C++11
+class A{};
+class B : public A{};
+void func(shared_ptr<B>){}
+TEST(testFunc, testFunc_conv){
+	std::function<void(shared_ptr<A>)> afunc;
+	afunc = func;
+}*/
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
