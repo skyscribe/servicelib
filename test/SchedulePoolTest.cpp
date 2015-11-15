@@ -42,36 +42,50 @@ protected:
 	virtual void TearDown() override{
 		sched_.stop();
 	}
+
+	std::pair<size_t, size_t> runAsyncJobsAndWaitForFinish(size_t jobCnt, const std::string& jobName, 
+			function<int(int)>&& getParam, function<void()>&& onJobDone, const std::string& desc = "",
+			const std::string& strand = ""){
+		atomic<int> done(0);
+
+		auto doneAction = [&]() -> bool{
+			if (onJobDone) 
+				onJobDone();
+			done++;
+		};
+		auto callTm = profileFor([&]{
+			for (int i = 0; i < jobCnt; ++i)
+				sched_.interfaceCall(jobName, true, false, doneAction, strand, getParam(i));
+		}, desc, false /*don't print*/);
+
+		auto waitForDone = [&]{
+			for(auto i = 0; (i < 1000) && (done != jobCnt); ++i)
+				this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
+		};
+		auto waitTm = profileFor(waitForDone, desc + " - join", false/*don't print*/);
+		
+		EXPECT_EQ(done, jobCnt);
+		return {callTm, waitTm};
+	}
 };
 
+
 TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
-	atomic<int> done(0);
 	const size_t jobs = poolSize_;
 	mutex lock;
 	set<thread::id> idsList;
-	std::stringstream desc;
-	desc << "Launching " << jobs << " jobs asynchronously [each requires{" << timeForSingleJob << "}ms]";
-
-	auto tm = profileFor([&]{
-		for (auto i = 0; i < jobs; ++i){
-			sched_.interfaceCall("heavy", true, false, [&]() -> bool{
-				lock.lock();
-				idsList.insert(this_thread::get_id());
-				lock.unlock();
-				done++;
-			}, "", 1 << i);
+	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "heavy", [](int i) -> int{
+			return 1 << i;
+		}, [&](){
+			lock.lock();
+			idsList.insert(this_thread::get_id());
+			lock.unlock();		
 		}
-	}, desc.str(), true /*true*/);
+	);
 
-	auto waitTm = profileFor([&]{
-	size_t i = 0;
-	for(; (i < 1000) && (done != jobs); ++i)
-		this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
-	}, "", false);
-
-	ASSERT_EQ(done, jobs);
-	ASSERT_LT(tm, timeForSingleJob);
-	EXPECT_LT(tm + waitTm, timeForSingleJob*jobs);
+	//NOTE: check on running time may not be stable and subject to CPU scheduling!
+	ASSERT_LT(tmInfo.first, timeForSingleJob);
+	EXPECT_LT(tmInfo.first + tmInfo.second, timeForSingleJob*jobs);
 	EXPECT_EQ(idsList.size(), jobs);
 	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);	
 }
@@ -80,14 +94,9 @@ TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
 	atomic<int> done(0);
 	const size_t jobs = poolSize_*2;
 
-	auto tm = profileFor([&]{
-		for (auto i = 0; i < jobs; ++i)
-			sched_.interfaceCall("light", true, false, [&]() -> bool{
-				done++;
-			}, "strand", 1 << i);
-		while (done != jobs)
-			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
-	}, "", false);
+	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "light", [&](int i) -> int{
+			return 1 << i;
+		}, function<void()>(), "", "strand");
 
 	EXPECT_EQ(threadMapping_.size(), jobs);
 	std::set<thread::id> idSets;
