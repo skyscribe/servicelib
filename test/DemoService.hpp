@@ -1,4 +1,5 @@
 #include "InterfaceScheduler.hpp"
+#include "Helper.hpp"
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -6,9 +7,9 @@
 class DemoService{
 public:
 	DemoService(InterfaceScheduler& sched) : scheduler_(sched){
-		scheduler_.registerInterfaceFor<int, std::string>("doSomethingA", 
+		registerInterfaceFor<int, std::string>(scheduler_, "doSomethingA", 
 			std::bind(&DemoService::doSomethingA, this, std::placeholders::_1));
-		scheduler_.registerInterfaceFor<bool, int>("doSomethingB",
+		registerInterfaceFor<bool, int>(scheduler_, "doSomethingB",
 			std::bind(&DemoService::doSomethingB, this, std::placeholders::_1));
 	}
 

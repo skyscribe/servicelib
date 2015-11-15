@@ -15,3 +15,11 @@ inline size_t profileFor(std::function<void()> call, const std::string& hint = "
 		std::cout << "Time spent on <" << hint << "> is " << diff.count() << " milliseconds" << std::endl;
 	return diff.count();
 };
+
+template <class ... Args, class ActionType>
+inline void registerInterfaceFor(InterfaceScheduler& sched, const std::string& idStr, ActionType action){
+	sched.registerInterface(idStr, [=](const ParaArgsBase& p) -> bool{
+		typedef ParamArgs<Args ...> ActualType;
+		return action(static_cast<const ActualType&>(p));
+	});
+}
