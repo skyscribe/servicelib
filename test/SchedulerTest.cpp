@@ -28,9 +28,10 @@ protected:
 TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
 	std::string hint("synchronous call");
 	thread::id ctxId;
-	sched_.interfaceCall("doSomethingA", false, true, [&]() -> bool{
+	CallProperty prop = {false, true, [&]() -> bool{
 		ctxId = this_thread::get_id();
-	}, "", 2, hint);
+	}, ""};
+	sched_.interfaceCall("doSomethingA", std::forward<CallProperty>(prop), 2, hint);
 
 	EXPECT_EQ(service_.getResult(), "Method A executed, with parameters:2," + hint + "\n");
 	EXPECT_EQ(ctxId, this_thread::get_id());
@@ -73,7 +74,7 @@ TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithou
 TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 	auto start = chrono::steady_clock::now();
 	auto var = make_shared<atomic<int>>(0);
-	const size_t heavyActionMs = 5;
+	const size_t heavyActionMs = 20;
 	*var = 0;
 
 	size_t dur = profileFor([&]{
@@ -92,7 +93,6 @@ TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 
 	*var = 1;
 	EXPECT_LT(dur, heavyActionMs);
-	//cout << "case sync end " << endl;
 }
 
 TEST_F(SchedulerTest, invokeNotRegisteredCall_NothingCalled){

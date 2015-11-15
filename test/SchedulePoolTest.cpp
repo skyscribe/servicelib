@@ -55,27 +55,30 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	auto tm = profileFor([&]{
 		for (auto i = 0; i < jobs; ++i){
 			sched_.interfaceCall("heavy", true, false, [&]() -> bool{
-				done++;
 				lock.lock();
 				idsList.insert(this_thread::get_id());
 				lock.unlock();
+				done++;
 			}, "", 1 << i);
 		}
+	}, desc.str(), true /*true*/);
 
-		size_t i = 0;
-		for(; (i < 1000) && (done != jobs); ++i)
-			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
-	}, desc.str(), false /*true*/);
+	auto waitTm = profileFor([&]{
+	size_t i = 0;
+	for(; (i < 1000) && (done != jobs); ++i)
+		this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
+	}, "", false);
 
-	EXPECT_EQ(done, jobs);
-	EXPECT_LT(tm, timeForSingleJob*jobs);
+	ASSERT_EQ(done, jobs);
+	ASSERT_LT(tm, timeForSingleJob);
+	EXPECT_LT(tm + waitTm, timeForSingleJob*jobs);
 	EXPECT_EQ(idsList.size(), jobs);
 	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);	
 }
 
 TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
 	atomic<int> done(0);
-	const size_t jobs = poolSize_;
+	const size_t jobs = poolSize_*2;
 
 	auto tm = profileFor([&]{
 		for (auto i = 0; i < jobs; ++i)

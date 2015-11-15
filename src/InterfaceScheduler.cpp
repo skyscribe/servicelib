@@ -44,20 +44,21 @@ const AsyncWorkerPtr& InterfaceScheduler::getWorkerForSchedule(const std::string
 	auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
 		return a->getLoad() < b->getLoad();
 	});
-	
+
 	if (strand.empty())
 		return *it;
 	else
 		return getStrandWorkerForSchedule(strand, *it);
-
-	//for (auto worker : asyncWorkers_)
-	//	cout << "Worker<" << worker->getId() << ",load=" << worker->getLoad() << endl;
-	//cout << "selected:" << (*it)->getId() << ",load=" << (*it)->getLoad() << endl;
-	return *it;
 }
 
 const AsyncWorkerPtr& InterfaceScheduler::getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle){
 	if (strands_.find(strand) == strands_.end())
 		strands_[strand] = idle;
 	return strands_[strand];
+}
+
+void InterfaceScheduler::dumpWorkersLoad(std::ostream& collector)const{
+	collector << "AsyncWorkers load info:" << endl;
+	for (auto worker : asyncWorkers_)
+		collector << "\tWorker<" << worker->getId() << ",load=" << worker->getLoad() << endl;	
 }
