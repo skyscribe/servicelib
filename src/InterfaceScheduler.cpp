@@ -1,18 +1,30 @@
 #include "InterfaceScheduler.hpp"
 #include "Worker.h"
 #include <iostream>
+#include <cassert>
 #include <algorithm>
 using namespace std;
 
-InterfaceScheduler::InterfaceScheduler(){}
+void InterfaceScheduler::start(size_t poolSize){
+	if (started_)
+		return;
 
-void InterfaceScheduler::start(size_t poolSize_){
-	syncWorker_.reset(new SyncWorker());
-	for (auto i = 0; i < poolSize_; ++i)
-		asyncWorkers_.push_back(make_shared<AsyncWorker>());
+	createWorksIfNotInitialized(poolSize);
 	for (auto worker : asyncWorkers_)
 		worker->blockUntilReady();
+	started_ = true;
 }
+
+void InterfaceScheduler::createWorksIfNotInitialized(size_t poolSize){
+	if (!syncWorker_)
+		syncWorker_.reset(new SyncWorker());
+	if (asyncWorkers_.empty())
+		for (auto i = 0; i < poolSize; ++i)
+			asyncWorkers_.push_back(make_shared<AsyncWorker>());
+	else
+		assert(asyncWorkers_.size() == poolSize);	
+}
+
 
 void InterfaceScheduler::stop(){
 	for(auto worker : asyncWorkers_)
@@ -61,4 +73,11 @@ void InterfaceScheduler::dumpWorkersLoad(std::ostream& collector)const{
 	collector << "AsyncWorkers load info:" << endl;
 	for (auto worker : asyncWorkers_)
 		collector << "\tWorker<" << worker->getId() << ",load=" << worker->getLoad() << endl;	
+}
+
+void InterfaceScheduler::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad){
+	asyncWorksCnt = asyncWorkers_.size();
+	totalLoad = 0;
+	for (auto worker : asyncWorkers_)
+		totalLoad += worker->getLoad();
 }

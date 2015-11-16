@@ -5,7 +5,7 @@
 #include <cassert>
 using namespace std;
 
-bool SyncWorker::doJob(Callable&& call, Callable&& onDone){
+bool SyncWorker::doJob(Callable call, Callable onDone){
 	auto ret = call();
 	if (onDone){
 		onDone();
@@ -53,7 +53,7 @@ void runTheCall(Callable action, Callable onDone){
 		onDone();
 }
 
-bool AsyncWorker::doJob(Callable&& call, Callable&& onDone){
+bool AsyncWorker::doJob(Callable call, Callable onDone){
 	{
 		std::unique_lock<std::mutex> lock(queueLock_);
 		calls_.push_back({call, onDone});
@@ -63,7 +63,7 @@ bool AsyncWorker::doJob(Callable&& call, Callable&& onDone){
 	return true;
 }
 
-bool AsyncWorker::doSyncJob(Callable&& call, Callable&& onDone){
+bool AsyncWorker::doSyncJob(Callable call, Callable onDone){
 	atomic<bool> finished(false);
 	doJob(std::forward<Callable>(call), [&]() -> bool{
 		onDone();

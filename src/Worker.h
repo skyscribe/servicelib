@@ -10,22 +10,22 @@
 typedef std::function<bool()> Callable;
 class SyncWorker{
 public:
-	bool doJob(Callable&& call, Callable&& onDone);
+	virtual bool doJob(Callable call, Callable onDone);
 };
 
 class AsyncWorker{
 public:
 	AsyncWorker() : thread_(std::bind(&AsyncWorker::run, this)),
 		active_(1), ready_(0), outstandingJobs_(0){}
-	~AsyncWorker() {stop();}
+	virtual ~AsyncWorker() {stop();}
 
-	void blockUntilReady();
-	void stop();
-	bool doJob(Callable&& call, Callable&& onDone);
-	bool doSyncJob(Callable&& call, Callable&& onDone);
+	virtual void blockUntilReady();
+	virtual void stop();
+	virtual bool doJob(Callable call, Callable onDone);
+	virtual bool doSyncJob(Callable call, Callable onDone);
 	void run();
-	size_t getLoad() {return outstandingJobs_;}
-	std::thread::id getId() {return thread_.get_id();}
+	virtual size_t getLoad() {return outstandingJobs_;}
+	virtual std::thread::id getId() {return thread_.get_id();}
 
 private:
 	void scheduleFirstOutstandingJob();

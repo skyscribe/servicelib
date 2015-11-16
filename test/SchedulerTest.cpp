@@ -1,29 +1,10 @@
-#include "InterfaceScheduler.hpp"
-#include "DemoService.hpp"
-#include "Helper.hpp"
-
+#include "SchedulerTestFixture.hpp"
 #include <iostream>
 #include <chrono>
 #include <memory>
 #include <thread>
 #include <atomic>
-#include "gtest/gtest.h"
-
 using namespace std;
-
-class SchedulerTest : public ::testing::Test{
-protected:
-	InterfaceScheduler sched_;
-	DemoService service_;
-
-	SchedulerTest() : Test(), service_(sched_) {}
-	virtual void SetUp() override{
-		sched_.start(1);
-	}
-	virtual void TearDown() override{
-		sched_.stop(); 
-	}
-};
 
 TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
 	std::string hint("synchronous call");
@@ -96,11 +77,6 @@ TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 	EXPECT_LT(dur, heavyActionMs);
 }
 
-TEST_F(SchedulerTest, invokeNotRegisteredCall_NothingCalled){
-	//TODO: catch exception and check the throw behavior - shall have assertion error!
-	EXPECT_FALSE(sched_.interfaceCall("unknown"));
-}
-
 /* Below code won't pass under C++11
 class A{};
 class B : public A{};
@@ -109,9 +85,3 @@ TEST(testFunc, testFunc_conv){
 	std::function<void(shared_ptr<A>)> afunc;
 	afunc = func;
 }*/
-////////////////////////////////////////////////////////////////////////////////
-int main(int argc, char **argv)
-{
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}

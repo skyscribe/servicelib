@@ -6,16 +6,18 @@ set (CMAKE_CXX_STANDARD 11)
 endif()
 
 #google test/mock
-set(gtestDir ${CMAKE_CURRENT_SOURCE_DIR}/gtest/)
-add_library(gtest STATIC ${gtestDir}/src/gtest-all.cc) 
-include_directories(SYSTEM PUBLIC ${gtestDir}/include)
-include_directories(PUBLIC ${gtestDir})
+set(gtestDir ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(gtest STATIC ${gtestDir}/gtest/src/gtest-all.cc ${gtestDir}/gmock/src/gmock-all.cc) 
+include_directories(SYSTEM PUBLIC ${gtestDir}/gtest/include ${gtestDir}/gmock/include)
+include_directories(PUBLIC ${gtestDir}/gtest ${gtestDir}/gmock)
 
 set(srcList
 	src/InterfaceScheduler.cpp
 	src/Worker.cpp
 	test/SchedulerTest.cpp
 	test/SchedulePoolTest.cpp
+	test/SchedulerUT.cpp
+	test/testMain.cpp
 )
 
 add_executable(ut ${srcList})
