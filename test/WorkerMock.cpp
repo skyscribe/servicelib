@@ -12,7 +12,7 @@ AsyncWorkerMock::AsyncWorkerMock(bool callReal) : load_(0){
 		ON_CALL(*this, doJob(_, _)).WillByDefault(
 			DoAll(WithoutArgs(Invoke(this, increaseLoad)), 
 				Invoke(real_.get(), &AsyncWorker::doJob)));
-		ON_CALL(*this, getLoad()).WillByDefault(Invoke(this, fetchLoad));
+		ON_CALL(*this, getLoad()).WillByDefault(Invoke(this, &AsyncWorkerMock::fetchLoad));
 		ON_CALL(*this, getId()).WillByDefault(Invoke(real_.get(), &AsyncWorker::getId));		
 	}
 }
