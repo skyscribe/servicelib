@@ -9,13 +9,13 @@ void InterfaceScheduler::start(size_t poolSize){
 	if (started_)
 		return;
 
-	createWorksIfNotInitialized(poolSize);
+	createWorkersIfNotInitialized(poolSize);
 	for (auto worker : asyncWorkers_)
 		worker->blockUntilReady();
 	started_ = true;
 }
 
-void InterfaceScheduler::createWorksIfNotInitialized(size_t poolSize){
+void InterfaceScheduler::createWorkersIfNotInitialized(size_t poolSize){
 	if (!syncWorker_)
 		syncWorker_.reset(new SyncWorker());
 	if (asyncWorkers_.empty())
@@ -56,7 +56,7 @@ const AsyncWorkerPtr& InterfaceScheduler::getWorkerForSchedule(const std::string
 	auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
 		return a->getLoad() < b->getLoad();
 	});
-
+	//dumpWorkersLoad(cout);
 	if (strand.empty())
 		return *it;
 	else
@@ -70,7 +70,7 @@ const AsyncWorkerPtr& InterfaceScheduler::getStrandWorkerForSchedule(const std::
 }
 
 void InterfaceScheduler::dumpWorkersLoad(std::ostream& collector)const{
-	collector << "AsyncWorkers load info:" << endl;
+	collector << "AsyncWorkers load info: total=" << asyncWorkers_.size() << endl;
 	for (auto worker : asyncWorkers_)
 		collector << "\tWorker<" << worker->getId() << ",load=" << worker->getLoad() << endl;	
 }

@@ -8,35 +8,66 @@
 #include <mutex>
 #include <set>
 
+#include "WorkerMock.hpp"
 #include "gtest/gtest.h"
 
 using namespace std;
+using ::testing::Invoke;
+using ::testing::ElementsAre;
+using ::testing::_;
+
+typedef vector<shared_ptr<AsyncWorkerMock>> WorkerList;
+AsyncWorkerQueue createMockedWorkers(size_t num){
+	AsyncWorkerQueue queue;
+	for (auto i = 0; i < num; ++i)
+		queue.push_back(make_shared<AsyncWorkerMock>(true/*do real jobs*/));
+	return queue;
+}
+
 
 class SchedulePoolTest : public ::testing::Test{
 protected:
+	size_t poolSize_;
+	AsyncWorkerQueue workers_;
+
 	InterfaceScheduler sched_;
-	const size_t poolSize_ = 4;
 	atomic<int> sharedVar_;
 	const size_t timeForSingleJob = 20;
 
 	std::mutex lock_;
 	std::vector<std::pair<int, thread::id>> threadMapping_;
 
+	SchedulePoolTest() : ::testing::Test(), poolSize_(4), workers_(createMockedWorkers(poolSize_)),
+			sched_(workers_), sharedVar_(0){}
+
 	virtual void SetUp() override{
-		sharedVar_ = 0;
+		setExpectationForMockedWorker([&](AsyncWorkerMock& worker){
+			EXPECT_CALL(worker, blockUntilReady()).Times(1);
+			EXPECT_CALL(worker, stop()).Times(1);
+			EXPECT_CALL(worker, getLoad()).Times(::testing::AnyNumber());
+			EXPECT_CALL(worker, getId()).Times(::testing::AnyNumber());
+		});
+
 		sched_.registerInterface("heavy", [&](const ParaArgsBase& p) -> bool {
 			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
 			sharedVar_ += get<0>(static_cast<const ParamArgs<int>&>(p));
 			return true;
 		});
+
 		registerInterfaceFor<int>(sched_, "light", [&](const ParamArgs<int> p)->bool{
 			lock_.lock();
 			threadMapping_.push_back({get<0>(p), this_thread::get_id()});
 			lock_.unlock();
 		});
+
 		profileFor([&]{
 			sched_.start(poolSize_);
 		}, "start scheduler");
+	}
+
+	void setExpectationForMockedWorker(function<void(AsyncWorkerMock&)> action){
+		for(auto worker : workers_)
+			action(*(static_cast<AsyncWorkerMock*>(worker.get())));
 	}
 
 	virtual void TearDown() override{
@@ -80,25 +111,34 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	const size_t jobs = poolSize_;
 	mutex lock;
 	set<thread::id> idsList;
+	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
+		EXPECT_CALL(worker, doJob(_, _)).Times(1);
+	});
+
 	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "heavy", [](int i) -> int{
 			return 1 << i;
 		}, [&](){
-			lock.lock();
+			unique_lock<mutex> guard(lock);
 			idsList.insert(this_thread::get_id());
-			lock.unlock();		
 		}
 	);
 
 	//NOTE: check on running time may not be stable and subject to CPU scheduling!
-	ASSERT_LT(tmInfo.first, timeForSingleJob);
-	EXPECT_LT(tmInfo.first + tmInfo.second, timeForSingleJob*jobs);
+	//ASSERT_LT(tmInfo.first, timeForSingleJob);
+	//EXPECT_LT(tmInfo.first + tmInfo.second, timeForSingleJob*jobs);
 	EXPECT_EQ(idsList.size(), jobs);
-	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);	
+	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);
 }
 
 TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
 	atomic<int> done(0);
 	const size_t jobs = poolSize_*2;
+
+	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
+		EXPECT_CALL(worker, doJob(_, _)).Times(0);
+	});
+	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[0].get())), 
+		doJob(_, _)).Times(jobs);
 
 	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "light", [&](int i) -> int{
 			return 1 << i;

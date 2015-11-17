@@ -84,7 +84,7 @@ private:
 	const AsyncWorkerPtr& getWorkerForSchedule(const std::string& strand);
 	const AsyncWorkerPtr& getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle);
 
-	void createWorksIfNotInitialized(size_t poolSize);
+	void createWorkersIfNotInitialized(size_t poolSize);
 
 	//Invoke the actual call wrapped in cb/onDone
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
