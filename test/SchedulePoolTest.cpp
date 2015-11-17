@@ -32,7 +32,7 @@ protected:
 
 	InterfaceScheduler sched_;
 	atomic<int> sharedVar_;
-	const size_t timeForSingleJob = 20;
+	const size_t timeForSingleJob = 5;
 
 	std::mutex lock_;
 	std::vector<std::pair<int, thread::id>> threadMapping_;
@@ -48,13 +48,13 @@ protected:
 			EXPECT_CALL(worker, getId()).Times(::testing::AnyNumber());
 		});
 
-		sched_.registerInterface("heavy", [&](const ParaArgsBase& p) -> bool {
-			this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
+		sched_.registerInterface("sum", [&](const ParaArgsBase& p) -> bool {
+			//this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
 			sharedVar_ += get<0>(static_cast<const ParamArgs<int>&>(p));
 			return true;
 		});
 
-		registerInterfaceFor<int>(sched_, "light", [&](const ParamArgs<int> p)->bool{
+		registerInterfaceFor<int>(sched_, "collect", [&](const ParamArgs<int> p)->bool{
 			lock_.lock();
 			threadMapping_.push_back({get<0>(p), this_thread::get_id()});
 			lock_.unlock();
@@ -115,7 +115,7 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 		EXPECT_CALL(worker, doJob(_, _)).Times(1);
 	});
 
-	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "heavy", [](int i) -> int{
+	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "sum", [](int i) -> int{
 			return 1 << i;
 		}, [&](){
 			unique_lock<mutex> guard(lock);
@@ -140,7 +140,7 @@ TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
 	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[0].get())), 
 		doJob(_, _)).Times(jobs);
 
-	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "light", [&](int i) -> int{
+	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "collect", [&](int i) -> int{
 			return 1 << i;
 		}, function<void()>(), "", "strand");
 
