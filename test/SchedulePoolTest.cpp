@@ -75,8 +75,8 @@ protected:
 	}
 
 	std::pair<size_t, size_t> runAsyncJobsAndWaitForFinish(size_t jobCnt, const std::string& jobName, 
-			function<int(int)>&& getParam, function<void()>&& onJobDone, const std::string& desc = "",
-			const std::string& strand = ""){
+			function<int(int)>&& getParam, function<void()>&& onJobDone = function<void()>(),
+			const std::string& desc = "", const std::string& strand = ""){
 		atomic<int> done(0);
 		auto callTm = scheduleAllJobs(done, jobCnt, jobName, forward<function<int(int)>>(getParam),
 			forward<function<void()>>(onJobDone), desc, strand);
@@ -130,8 +130,7 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	EXPECT_EQ(sharedVar_, (1 << jobs) - 1);
 }
 
-TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
-	atomic<int> done(0);
+TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsAStrand){
 	const size_t jobs = poolSize_*2;
 
 	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
@@ -149,4 +148,24 @@ TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsStrand){
 	for (auto item : threadMapping_)
 		idSets.insert(item.second);
 	EXPECT_EQ(idSets.size(), 1);
+}
+
+TEST_F(SchedulePoolTest, scheduleOnInterleavedStrand_allJobsRunOnAssociatedStrands){
+	const size_t jobs = poolSize_;
+
+	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
+		EXPECT_CALL(worker, doJob(_, _)).Times(0);
+	});
+	for (auto i : {0, 2})
+		EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[i].get())), 
+			doJob(_, _)).Times(jobs);
+	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[1].get())), 
+			doJob(_, _)).Times(1);
+
+	auto getParam = [&](int i) -> int{
+		return 1 << i;
+	};
+	runAsyncJobsAndWaitForFinish(jobs, "collect", getParam, function<void()>(), "", "strandA");
+	runAsyncJobsAndWaitForFinish(1, "collect", getParam, function<void()>(), "", "");
+	runAsyncJobsAndWaitForFinish(jobs, "collect", getParam, function<void()>(), "", "strandB");
 }
