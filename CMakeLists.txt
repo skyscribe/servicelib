@@ -19,6 +19,7 @@ set(srcList
 	test/SchedulerUT.cpp
 	test/testMain.cpp
 	test/WorkerMock.cpp
+	test/SchedulePoolTestFixture.cpp
 )
 
 add_executable(ut ${srcList})
