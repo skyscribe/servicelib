@@ -1,4 +1,12 @@
-cmake_minimum_required(VERSION 2.8) 
+cmake_minimum_required(VERSION 2.8)
+option(useSDK "whether use SDK tool chain" OFF)
+if(useSDK)
+    set(gccPrefix "/build/ltesdkroot/Platforms/LINUX/FB_PS_LFS_REL_2015_11_0014/sdk/bld-tools/x86_64-pc-linux-gnu")
+    set(CMAKE_C_COMPILER ${gccPrefix}/bin/gcc)
+    set(CMAKE_CXX_COMPILER ${gccPrefix}/bin/g++)
+endif()
+
+
 if(CMAKE_VERSION VERSION_LESS "3.1")
     set(CMAKE_CXX_FLAGS "--std=c++11 ${CMAKE_CXX_FLAGS}")
 else()

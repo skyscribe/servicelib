@@ -57,8 +57,8 @@ public:
 
 	//Actual call under the hood - Use above wrapper overload as possible!
 	template <class ... Args>
-	bool interfaceCall(const std::string& idStr, bool async = false, bool waitForDone = true,
-			Callable&& onCallDone = Callable(), const std::string& strand = "", const Args& ... args){
+	bool interfaceCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
+		const std::string& strand, const Args& ... args){
 		mappingLock_.lock();
 		auto actIt = actionMapping_.find(idStr);
 		if (actIt == actionMapping_.end()){

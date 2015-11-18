@@ -27,5 +27,5 @@ TEST_F(SchedulerMockTest, invokeNotRegisteredCall_NothingCalled){
 	//TODO: catch exception and check the throw behavior - shall have assertion error!
 	using ::testing::_;
 	EXPECT_CALL(*sync_, doJob(::testing::_, ::testing::_)).Times(0);
-	EXPECT_FALSE(sched_.interfaceCall("unknown"));
+	EXPECT_FALSE(sched_.interfaceCall("unknown", CallProperty()/*doesn't matter*/));
 }
