@@ -36,7 +36,8 @@ void SchedulePoolTest::SetUp(){
 }
 
 pair<size_t, size_t> SchedulePoolTest::runAsyncJobsAndWaitForFinish(size_t jobCnt, const string& jobName, 
-		function<int(int)>&& getParam, function<void()>&& onJobDone, const string& desc, const string& strand){
+		function<int(int)>&& getParam, const string& strand, function<void()>&& onJobDone,
+		const string& desc){
 	atomic<int> done(0);
 	auto callTm = scheduleAllJobs(done, jobCnt, jobName, forward<function<int(int)>>(getParam),
 		forward<function<void()>>(onJobDone), desc, strand);

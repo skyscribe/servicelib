@@ -41,8 +41,9 @@ protected:
 	}
 
 	std::pair<size_t, size_t> runAsyncJobsAndWaitForFinish(size_t jobCnt, const std::string& jobName, 
-			function<int(int)>&& getParam, std::function<void()>&& onJobDone = std::function<void()>(),
-			const std::string& desc = "", const std::string& strand = "");
+			function<int(int)>&& getParam, const std::string& strand = "", 
+			std::function<void()>&& onJobDone = std::function<void()>(),
+			const std::string& desc = "");
 private:
 	size_t scheduleAllJobs(std::atomic<int>& done, size_t jobCnt, const std::string& jobName, 
 			function<int(int)>&& getParam, std::function<void()>&& onJobDone, const std::string& desc = "",

@@ -17,6 +17,8 @@ using ::testing::Invoke;
 using ::testing::ElementsAre;
 using ::testing::_;
 
+auto getExponentOf = [&](int i) -> int{ return 1 << i; };
+
 TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	const size_t jobs = poolSize_;
 	mutex lock;
@@ -25,15 +27,14 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 		EXPECT_CALL(worker, doJob(_, _)).Times(1);
 	});
 
-	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "sum", [](int i) -> int{
-			return 1 << i;
-		}, [&](){
+	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "sum", getExponentOf, "", [&](){
 			unique_lock<mutex> guard(lock);
 			idsList.insert(this_thread::get_id());
 		}
 	);
 
 	//NOTE: check on running time may not be stable and subject to CPU scheduling!
+	//  tmInfo for reference/debug only
 	//ASSERT_LT(tmInfo.first, timeForSingleJob);
 	//EXPECT_LT(tmInfo.first + tmInfo.second, timeForSingleJob*jobs);
 	EXPECT_EQ(idsList.size(), jobs);
@@ -49,9 +50,7 @@ TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsAStrand){
 	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[0].get())), 
 		doJob(_, _)).Times(jobs);
 
-	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "collect", [&](int i) -> int{
-			return 1 << i;
-		}, function<void()>(), "", "strand");
+	auto tmInfo = runAsyncJobsAndWaitForFinish(jobs, "collect", getExponentOf, "strand");
 
 	EXPECT_EQ(threadMapping_.size(), jobs);
 	std::set<thread::id> idSets;
@@ -72,10 +71,7 @@ TEST_F(SchedulePoolTest, scheduleOnInterleavedStrand_allJobsRunOnAssociatedStran
 	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[1].get())), 
 			doJob(_, _)).Times(1);
 
-	auto getParam = [&](int i) -> int{
-		return 1 << i;
-	};
-	runAsyncJobsAndWaitForFinish(jobs, "collect", getParam, function<void()>(), "", "strandA");
-	runAsyncJobsAndWaitForFinish(1, "collect", getParam, function<void()>(), "", "");
-	runAsyncJobsAndWaitForFinish(jobs, "collect", getParam, function<void()>(), "", "strandB");
+	runAsyncJobsAndWaitForFinish(jobs, "collect", getExponentOf, "strandA");
+	runAsyncJobsAndWaitForFinish(1, "collect", getExponentOf);
+	runAsyncJobsAndWaitForFinish(jobs, "collect", getExponentOf, "strandB");
 }
