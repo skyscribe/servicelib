@@ -87,14 +87,15 @@ TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
 	std::vector<shared_ptr<thread>> threads;
 	const size_t jobs = 10;
 
+	sched.start(1);
 	for (auto i = 0; i < jobs; ++i)
-		threads.push_back(make_shared<thread>(thread([&sched, &service, i]{
+		threads.push_back(make_shared<thread>([&sched, &service, i]() -> void{
 			stringstream strm;
-			strm << "serv" << i;
+			strm << "serv" << i; //to_string not supported on cygwin?
 			registerInterfaceFor<int>(sched, strm.str(), service);
 			CallProperty prop = {true, true, Callable(), ""};
 			EXPECT_TRUE(sched.interfaceCall(strm.str(), forward<CallProperty>(prop), i));
-		})));
+		}));
 	for (auto inst : threads)
 		inst->join();
 

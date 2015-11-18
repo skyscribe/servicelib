@@ -66,7 +66,8 @@ bool AsyncWorker::doJob(Callable call, Callable onDone){
 bool AsyncWorker::doSyncJob(Callable call, Callable onDone){
 	atomic<bool> finished(false);
 	doJob(std::forward<Callable>(call), [&]() -> bool{
-		onDone();
+		if (onDone)
+			onDone();
 		finished = true;
 		//cout << "sync job done!" << endl;
 		return true;
