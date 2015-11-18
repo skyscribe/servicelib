@@ -90,11 +90,12 @@ private:
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
 
 	std::unordered_map<std::string, CallbackType> actionMapping_;
-	std::mutex mappingLock_;
+	mutable std::mutex mappingLock_;
 
 	std::vector<AsyncWorkerPtr> asyncWorkers_;
 	std::shared_ptr<SyncWorker> syncWorker_;
 	std::atomic<bool>			started_;
 
 	std::unordered_map<std::string, AsyncWorkerPtr> strands_;
+	mutable std::mutex strandsLock_;
 };

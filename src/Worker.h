@@ -23,11 +23,12 @@ public:
 	virtual void stop();
 	virtual bool doJob(Callable call, Callable onDone);
 	virtual bool doSyncJob(Callable call, Callable onDone);
-	void run();
+
 	virtual size_t getLoad() {return outstandingJobs_;}
 	virtual std::thread::id getId() {return thread_.get_id();}
 
 private:
+	void run();
 	void scheduleFirstOutstandingJob();
 	void waitForOutstandingJobsToFinish();
 	std::vector<std::pair<Callable, Callable>> calls_;

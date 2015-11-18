@@ -4,6 +4,7 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <string>
 using namespace std;
 
 TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
@@ -75,6 +76,35 @@ TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
 
 	*var = 1;
 	EXPECT_LT(dur, heavyActionMs);
+}
+
+//Need stress test for concurrency check!
+TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
+	InterfaceScheduler sched;
+	atomic<int> registered(0);
+
+	auto service = [&](const ParamArgs<int> par){ registered += get<0>(par); return true;};
+	std::vector<shared_ptr<thread>> threads;
+	const size_t jobs = 10;
+
+	for (auto i = 0; i < jobs; ++i)
+		threads.push_back(make_shared<thread>(thread([&sched, &service, i]{
+			stringstream strm;
+			strm << "serv" << i;
+			registerInterfaceFor<int>(sched, strm.str(), service);
+			CallProperty prop = {true, true, Callable(), ""};
+			EXPECT_TRUE(sched.interfaceCall(strm.str(), forward<CallProperty>(prop), i));
+		})));
+	for (auto inst : threads)
+		inst->join();
+
+	auto getAccumulation = [](int start, int end)->int{
+		int result = 0;
+		for (auto i = start; i < end; ++i)
+			result += i;
+		return result;
+	};
+	EXPECT_EQ(registered, getAccumulation(0, jobs));
 }
 
 /* Below code won't pass under C++11
