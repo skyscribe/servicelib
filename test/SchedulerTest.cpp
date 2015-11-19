@@ -83,7 +83,7 @@ TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
 	InterfaceScheduler sched;
 	atomic<int> registered(0);
 
-	auto service = [&](const ParamArgs<int> par){ registered += get<0>(par); return true;};
+	auto service = [&](const ParamArgs<int>& par){ registered += get<0>(par); return true;};
 	std::vector<shared_ptr<thread>> threads;
 	const size_t jobs = 10;
 

@@ -24,8 +24,8 @@ A closure (typically wrapped by ordinary function or lambda) can be attached to 
 
 A strand is used to force sequenial execution of mutliple calls - when mutliple calls (invocations) specify the same strand name, they will be executed strictly like a strand. This would be useful when sharing data between threads are not desired (no concurrent data protection required), or when the actual sceneraios demands strict sequence.
 
-Variadic Arguments
----------------------
+Variadic Arguments and Example Usage
+---------------------------------------
 Since the interface registered may demands external inputs as arguments (typically wrapped by **std::placeholders::_x**) that can only be bounded during calling site, it's supported to bind the actual passed parameters to the stored closure (by lambda) and actually apply them during action execution.
 
 A helper function is provided to facilitate the registration by explicitly declare the argument types signature, for example:
@@ -43,8 +43,8 @@ A helper function is provided to facilitate the registration by explicitly decla
 
 When the actual service get called asynchronously, `serviceImpl(1, "actualParam")` will be executed.
 
-Build
-======
+Build and Run Tests
+=======================
 Two variants of builds are supported on top of cmake:
 * Native build (requires gcc4.7 or later, or clang), when you don't have SDK installed.
 * SDK build - can detect PS_LFS_REL SDK and use that by default, as long as your machine has SDK installed.
@@ -66,3 +66,18 @@ Below targets are supported:
 * ut: generate unit testing binary
 * runUT: run all test cases once
 * runStress: run all test cases for 100 times (to detect possible race conditions); test will stop on first failure case and generate a core dump file for further analysis/debugging.
+
+Design Documents
+=================
+The `interfaceScheduler.hpp` is the main interface for external use, others shall be hidden from external accessing. A typical scenairo of usage is described in above section (example usage).
+
+Class Responsibility and Collaboration
+---------------------------------------
+![CRC Diagram](docs/CRC.png)
+
+Secenario Examples
+--------------------
+![Synchronous and blocking call](docs/SyncAndBlockCall.png)
+![Asynchronous and blocking call](docs/AsyncAndBlockCall.png)
+![Asynchronous and nonblocking call](docs/AsyncNonBlockCall.png)
+![Strand for multiple calls](docs/StrandForSequentialCalls.png)
