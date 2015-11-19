@@ -7,17 +7,21 @@ Calling Properties
 Below calling properties are supported:
 
 * asynchronous/synchronous
+
 If a call is specified as synchronous, the call will be run instantly within the same context (thread) and caller would be blocked natually. Asynchronous calls can be specified as blocked for completion.
 
 * block/unblock
+
 If a call is specified as unblock (not waiting for done), the call might be deferred, while passed in parameters would be stored (as a closure) and applied when actual call happens later.
 
 If a call is blocking, the caller's context would be suspended until actual call is handled.
 
 * onActionDone
+
 A closure (typically wrapped by ordinary function or lambda) can be attached to a specifc call, such that when the deferred call (or instant call within same context) is actually invoked and returned, *onActionDone* would be called immediately **within same context as actual call site**/ 
 
 * strand
+
 A strand is used to force sequenial execution of mutliple calls - when mutliple calls (invocations) specify the same strand name, they will be executed strictly like a strand. This would be useful when sharing data between threads are not desired (no concurrent data protection required), or when the actual sceneraios demands strict sequence.
 
 Variadic Arguments
@@ -50,7 +54,8 @@ Build Steps
 -------------
 Typical cmake work flow shall work:
 
-    mkdir bld; //the binary tree to store the build result
+    mkdir bld #the binary tree to store the build result
+    cd bld
     cmake ../
     make
 
@@ -61,5 +66,3 @@ Below targets are supported:
 * ut: generate unit testing binary
 * runUT: run all test cases once
 * runStress: run all test cases for 100 times (to detect possible race conditions); test will stop on first failure case and generate a core dump file for further analysis/debugging.
-
-
