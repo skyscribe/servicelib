@@ -22,13 +22,13 @@ TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
 TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithCaller){
 	atomic<bool> called(false);
 	thread::id ctxId;
-	const size_t consumedMs = 5;
+	//const size_t consumedMs = 5;
 
 	size_t dur = profileFor([&]{
 		sched_.interfaceCall("doSomethingB", true, true, [&]()->bool{
 			called = true;
 			ctxId = this_thread::get_id();		
-			this_thread::sleep_for(chrono::milliseconds(consumedMs));
+			//this_thread::sleep_for(chrono::milliseconds(consumedMs));
 			//cout << "SyncJob callback happen!" << endl;
 		}, "", true, 133);
 	});
@@ -47,35 +47,32 @@ TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithou
 		called = true;
 	}, "", false, 131);
 
-	size_t cnt = 0;
-	while ((!called) && (cnt++ < 100))
-		this_thread::sleep_for(chrono::milliseconds(2));
+	while ((!called))
+		this_thread::yield();
 	EXPECT_TRUE(called);
 	EXPECT_EQ(service_.getResult(), "Method B executed with parameters:0,131\n");
 }
 
-TEST_F(SchedulerTest, asyncCallAfterHeavyAction_AsyncCallDontBlock){
+TEST_F(SchedulerTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
 	auto start = chrono::steady_clock::now();
 	auto var = make_shared<atomic<int>>(0);
-	const size_t heavyActionMs = 20;
-	*var = 0;
 
 	size_t dur = profileFor([&]{
 		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
-			this_thread::sleep_for(chrono::milliseconds(heavyActionMs));
+			//This call can wait on condition to be set only after calling site exit interfaceCall
+			while ((*var) != 1)
+				this_thread::yield();
 			*var = 2;
-			//cout << "calling1A, var=" << *var << endl;
 		}, "", false, 131);
 
 		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
 			//cout << "calling1B, var=" << *var << endl;
 			EXPECT_EQ(*var, 2);
-			*var = 4;
+			*var = 3;
 		}, "", false, 111);
 	});
 
-	*var = 1;
-	EXPECT_LT(dur, heavyActionMs);
+	*var = 1; //will be joined during tear down
 }
 
 //Need stress test for concurrency check!
@@ -85,7 +82,7 @@ TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
 
 	auto service = [&](const ParamArgs<int>& par){ registered += get<0>(par); return true;};
 	std::vector<shared_ptr<thread>> threads;
-	const size_t jobs = 10;
+	const size_t jobs = 8;
 
 	sched.start(1);
 	for (auto i = 0; i < jobs; ++i)
@@ -107,12 +104,3 @@ TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
 	};
 	EXPECT_EQ(registered, getAccumulation(0, jobs));
 }
-
-/* Below code won't pass under C++11
-class A{};
-class B : public A{};
-void func(shared_ptr<B>){}
-TEST(testFunc, testFunc_conv){
-	std::function<void(shared_ptr<A>)> afunc;
-	afunc = func;
-}*/

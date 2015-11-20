@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <iostream>
+#include <type_traits>
 
 //profiler function
 inline size_t profileFor(std::function<void()> call, const std::string& hint = "", bool print = false){
@@ -18,8 +19,10 @@ inline size_t profileFor(std::function<void()> call, const std::string& hint = "
 
 template <class ... Args, class ActionType>
 inline void registerInterfaceFor(InterfaceScheduler& sched, const std::string& idStr, ActionType action){
+	typedef ParamArgs<Args ...> ActualType;
+	static_assert(std::is_convertible<ActionType, std::function<void(const ActualType&)>>::value,
+		"Incompatible type!"); 
 	sched.registerInterface(idStr, [=](const ParaArgsBase& p) -> bool{
-		typedef ParamArgs<Args ...> ActualType;
 		return action(static_cast<const ActualType&>(p));
 	});
 }
