@@ -56,7 +56,7 @@ Typical cmake work flow shall work:
 
     mkdir bld #the binary tree to store the build result
     cd bld
-    cmake ../
+    cmake ../ #optionally pass in useSDK=OFF if you want to compile against local toolchain(gcc/g++/clang)
     make
 
 Supported Targets
@@ -66,6 +66,9 @@ Below targets are supported:
 * ut: generate unit testing binary
 * runUT: run all test cases once
 * runStress: run all test cases for 100 times (to detect possible race conditions); test will stop on first failure case and generate a core dump file for further analysis/debugging.
+* genDocs: generate documents using plantuml
+
+Note: plantuml shall be installed before you can generate documents by `make genDocs`; the latest version of documents are kept up to date in below chapter.
 
 Design Documents
 =================
@@ -75,9 +78,15 @@ Class Responsibility and Collaboration
 ---------------------------------------
 ![CRC Diagram](docs/CRC.png)
 
+Interface Registration
+-------------------------
+An interface can only be called after it's registered - thread safety is guaranteed in interfaceScheduler level so concurrent registration/unregistration is possible.
+
+![Registration](docs/registerInterface.png)
+
 Secenario Examples
 --------------------
-![Synchronous and blocking call](docs/SyncAndBlockCall.png)
-![Asynchronous and blocking call](docs/AsyncAndBlockCall.png)
-![Asynchronous and nonblocking call](docs/AsyncNonBlockCall.png)
-![Strand for multiple calls](docs/StrandForSequentialCalls.png)
+![Synchronous and blocking call](docs/syncAndBlocking.png)
+![Asynchronous and blocking call](docs/asyncAndBlocking.png)
+![Asynchronous and nonblocking call](docs/asyncWithoutBlock.png)
+![Strand for multiple calls](docs/strandMultipleCallsAsSequential.png)

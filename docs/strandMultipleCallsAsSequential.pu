@@ -1,42 +1,42 @@
 @startuml
-title strand multiple calls for force sequential execution
-
+title strand multiple async calls for force sequential execution
+!pragma teoz true
 actor AsyncActorA
 actor AsyncActorB
 
 ref over InterfaceScheduler, ServiceImpl1, ServiceImpl2: registeration of service
 
-AsyncActorA -> InterfaceScheduler : interfaceCall("serviceA", async = true, strand = "strandA")
+AsyncActorA -> InterfaceScheduler : interfaceCall("serviceA",strand = "strandA")
 InterfaceScheduler -> AsyncWorker1 : doJob(actionA, onDoneA)
 activate AsyncWorker1 #Yellow
 
-AsyncActorA -> InterfaceScheduler : interfaceCall("serviceX", async = true, strand = "")
+AsyncActorA -> InterfaceScheduler : interfaceCall("serviceX")
 InterfaceScheduler -> AsyncWorker2 : doJob(actionX, onDoneX)
 activate AsyncWorker2 #Blue
 
-AsyncActorB -> InterfaceScheduler : interfaceCall("serviceB", async = true, strand = "strandA")
-InterfaceScheduler -> AsyncWorker2 : doJob(actionB, onDoneB)
+AsyncActorB -> InterfaceScheduler : interfaceCall("serviceB",strand = "strandA")
+InterfaceScheduler -> AsyncWorker1 : doJob(actionB, onDoneB)
 
 AsyncWorker1 -> AsyncWorker1: actionA()
-AsyncWorker1 --> ServiceImpl1 : do real action A
+& AsyncWorker1 --> ServiceImpl1 : do real action A
 
-AsyncWorker2 -> AsyncWorker2 : actionX()
+& AsyncWorker2 -> AsyncWorker2 : actionX()
 
 AsyncWorker1 -> AsyncWorker1: onDoneA()
-AsyncWorker1 --> AsyncActorA : A done
-
+& AsyncWorker1 --> AsyncActorA : A done
 note over AsyncActorA, AsyncActorB
     actionB and onDoneB only happens
      after actionA and onDoneA
 end note
 
 AsyncWorker1 -> AsyncWorker1: actionB()
-AsyncWorker1 --> ServiceImpl2 : do real action B
+& AsyncWorker1 --> ServiceImpl2 : do real action B
 
-AsyncWorker2 -> AsyncWorker2 : onDoneX()
+& AsyncWorker2 -> AsyncWorker2 : onDoneX()
 note over AsyncActorA #FFAAAA 
-    Possible concurrent data access for X done
-    The callback may comes interleaved with A/B
+    Possible concurrent data access in
+    for X done, may interleave with
+    onDoneA 
 end note
 
 AsyncWorker2 --> AsyncActorA : X done

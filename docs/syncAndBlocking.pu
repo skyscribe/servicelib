@@ -1,0 +1,26 @@
+@startuml
+title sychronous (and blocking) call
+
+actor syncActor
+
+ref over InterfaceScheduler, ServiceImpl: registeration of service
+
+syncActor -> syncActor: time to call
+activate syncActor #Yellow
+syncActor -> syncActor : prepare onActionDone
+syncActor -> InterfaceScheduler : interfaceCall(async = false, onActionDone)
+
+activate InterfaceScheduler #Yellow
+InterfaceScheduler -> syncWorker : doSyncJob(action, onActionDone)
+
+activate syncWorker #Yellow
+syncWorker -> syncWorker : action()
+syncWorker --> ServiceImpl : action calling back
+
+syncWorker -> syncWorker : onActionDone()
+syncWorker --> syncActor : action done calling back
+deactivate syncWorker
+
+deactivate InterfaceScheduler
+deactivate syncActor
+@enduml

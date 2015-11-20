@@ -45,4 +45,4 @@ add_custom_target(runStress COMMAND bash runUT.sh 100 WORKING_DIRECTORY ${CMAKE_
 add_custom_target(runUT COMMAND bash runUT.sh 1 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} DEPENDS ut copyFiles)
 
 # generate plantuml documentations
-add_custom_target(genDocs COMMAND plant *.pu WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs)
+add_custom_target(genDocs COMMAND plant -Sdpi=150 *.pu WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs)

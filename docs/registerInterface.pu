@@ -1,0 +1,12 @@
+@startuml
+title registration of service
+
+serviceImpl -> InterfaceScheduler: registerInterfaceFor<X, Y>(name, callbackType)
+InterfaceScheduler -> InterfaceScheduler : wrap closure and store for query
+InterfaceScheduler --> serviceImpl : registeration result
+... serving calls for name ...
+
+serviceImpl -> InterfaceScheduler: unRegiterInterface(name)
+InterfaceScheduler -> InterfaceScheduler : remove local storage
+InterfaceScheduler --> serviceImpl : return
+@enduml
