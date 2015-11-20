@@ -64,16 +64,21 @@ bool AsyncWorker::doJob(Callable call, Callable onDone){
 }
 
 bool AsyncWorker::doSyncJob(Callable call, Callable onDone){
-	atomic<bool> finished(false);
+	bool finished = false;
+	mutex flagMutex;
+	condition_variable cond;
+	
 	doJob(std::forward<Callable>(call), [&]() -> bool{
 		if (onDone)
 			onDone();
+		std::lock_guard<mutex> lock(flagMutex);
 		finished = true;
-		//cout << "sync job done!" << endl;
+		cond.notify_all();
 		return true;
 	});
-	while(!finished)
-		this_thread::sleep_for(chrono::milliseconds(10));
+
+	unique_lock<mutex> lock(flagMutex);
+	cond.wait(lock, [&]{return finished;});
 	return true;
 }
 
