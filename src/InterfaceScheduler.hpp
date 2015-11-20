@@ -59,15 +59,14 @@ public:
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
 		const std::string& strand, const Args& ... args){
-		mappingLock_.lock();
+		std::unique_lock<std::mutex> guard(mappingLock_);
 		auto actIt = actionMapping_.find(idStr);
 		if (actIt == actionMapping_.end()){
 			std::cout << "Non-existent interface to call:" << idStr << std::endl;
-			mappingLock_.unlock();
 			return false;
 		}else{
 			auto action = actIt->second; //copy explicitly to ensure thread-safety
-			mappingLock_.unlock();
+			guard.unlock();
 
 			return invokeCall([args..., action]() -> bool{
 				ParamArgs<Args ...> param(args...);

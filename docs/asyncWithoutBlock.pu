@@ -1,0 +1,48 @@
+@startuml
+title asynchronous and non-blocking call
+
+control cpu
+actor AsyncActor
+
+ref over InterfaceScheduler, ServiceImpl: registeration of service
+
+== store for deferred call ==
+AsyncActor -> AsyncActor: time to call
+activate AsyncActor #Yellow
+AsyncActor -> AsyncActor : prepare onActionDone
+AsyncActor -> InterfaceScheduler : interfaceCall(async = true, onActionDone)
+
+activate InterfaceScheduler #Yellow
+InterfaceScheduler -> AsyncWorker : doJob(action, onActionDone)
+
+activate AsyncWorker #Yellow
+AsyncWorker -> AsyncWorker : save <action, onActionDone>
+AsyncWorker --> InterfaceScheduler
+InterfaceScheduler --> AsyncActor
+
+deactivate InterfaceScheduler
+deactivate AsyncActor
+
+cpu --[#Blue]> AsyncWorker : context switch
+activate AsyncWorker #Blue
+
+== deferred call ==
+
+AsyncWorker -> AsyncWorker : scheduleOutstandingJobs
+
+AsyncWorker --[#Red]> ServiceImpl : action()
+note left #FFAAAA
+    concurrent data access
+     in ServiceImpl, critical
+     data area
+end note
+
+AsyncWorker --[#Red]> AsyncActor : onActionDone()
+note left #FFAAAA
+    concurrent data access
+     in AsyncWorker, critical 
+     data area
+end note
+
+deactivate AsyncWorker
+@enduml

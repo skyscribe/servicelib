@@ -1,0 +1,45 @@
+@startuml
+title asynchronous and blocking for completion call
+
+control cpu
+actor AsyncActor
+
+ref over InterfaceScheduler, ServiceImpl: registeration of service
+
+== store for deferred call ==
+AsyncActor -> AsyncActor: time to call
+activate AsyncActor #Yellow
+AsyncActor -> AsyncActor : prepare onActionDone
+AsyncActor -> InterfaceScheduler : interfaceCall(async = true, waitforDone = true, onActionDone)
+
+activate InterfaceScheduler #Yellow
+InterfaceScheduler -> AsyncWorker : doSyncJob(action, onActionDone)
+InterfaceScheduler -> InterfaceScheduler : block context
+
+activate AsyncWorker #Yellow
+AsyncWorker -> AsyncWorker : prepare wakeupAction and wrapActionDone
+AsyncWorker -> AsyncWorker : save <action, onActionDone>
+
+cpu --[#Blue]> AsyncWorker : context switch
+activate AsyncWorker #Blue
+
+== blocked call wakeup==
+
+AsyncWorker -> AsyncWorker : scheduleOutstandingJobs
+
+AsyncWorker --[#Red]> ServiceImpl : action()
+note left #FFAAAA
+    concurrent data access
+     in unless call
+     in a strand
+end note
+
+AsyncWorker --[#Red]> AsyncWorker : onActionDone() [wrapped]
+AsyncWorker -> AsyncWorker : invoke wakeupAction
+AsyncWorker --> AsyncActor : onActionDone
+note right: sequential access to data
+
+deactivate AsyncWorker
+deactivate InterfaceScheduler
+deactivate AsyncActor
+@enduml

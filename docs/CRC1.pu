@@ -1,0 +1,52 @@
+@startuml
+class InterfaceScheduler{
+    This calls is responsible for scheduling external interface calls to managed workers according to specified call property.
+    A fixed number of thread pools are started by default to serve call requests (given asynchronous call required)
+    It is also supported to run multiple calls as a strand such that calls are forced without concurrent data access
+    --
+    void start(size_t poolSize)
+    void stop()
+    bool registerInterface(const std::string& name, std::function<bool(ParaArgsBase&)> cb)
+    bool interfaceCall(const std::string& name, CallProperty&& prop, const Args&... args)
+}
+
+class CallProperty{
+    Providing calling specialities declaration
+    --
+    bool async
+    bool waitForDone
+    std::function<bool()> onCallDone
+    std::string strand
+}
+
+class SyncWorker{
+    Schedule the actual job within the same context as caller
+    --
+    bool doJob(Callable call, Callable onCallDone)
+}
+
+note top of AsyncWorker: each AsyncWorker wraps an unique thread to run designated jobs, and may associate with many strands
+class AsyncWorker <<ActiveObject>>{
+    Wrap an asynchronous thread (active object) to run all outstanding jobs assigned one by one
+    Also provide wrapper for synchronous job execution, calling context would be blocked until job actually executed
+    --
+    bool doJob(Callable call, Callable onCallDone)
+    bool doSyncJob(Callable call, Callable onCallDone)
+    bool blockUntilReady()
+    bool stop()
+    size_t getLoad()
+    std::thread::id getId()
+}
+
+note right of ServiceImplementor: different business scenario may provide differnt services
+class ServiceImplementor <<ScenarioImpl>>{
+    The actual service implementation class which supply a certain service and registers itself for other entities to call 
+    --
+}
+
+InterfaceScheduler .. CallProperty : uses >
+InterfaceScheduler "1" *-- "1" SyncWorker : contains
+InterfaceScheduler "1" *-- "many" AsyncWorker : contains
+ServiceImplementor "many" -- "1" InterfaceScheduler : uses >
+ServiceImplementor "many" -- "many" ServiceImplementor : uses >
+@enduml
