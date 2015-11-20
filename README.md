@@ -76,7 +76,7 @@ The `interfaceScheduler.hpp` is the main interface for external use, others shal
 
 Class Responsibility and Collaboration
 ---------------------------------------
-![CRC Diagram](docs/CRC.png)
+![CRC Diagram](docs/crc.png)
 
 Interface Registration
 -------------------------
