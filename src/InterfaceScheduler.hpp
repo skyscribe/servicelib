@@ -59,20 +59,14 @@ public:
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
 		const std::string& strand, const Args& ... args){
-		std::unique_lock<std::mutex> guard(mappingLock_);
-		auto actIt = actionMapping_.find(idStr);
-		if (actIt == actionMapping_.end()){
-			std::cout << "Non-existent interface to call:" << idStr << std::endl;
+		auto action = fetchStoredCallbackByServiceId(idStr);
+		if (!action)
 			return false;
-		}else{
-			auto action = actIt->second; //copy explicitly to ensure thread-safety
-			guard.unlock();
-
+		else
 			return invokeCall([args..., action]() -> bool{
 				ParamArgs<Args ...> param(args...);
 				return action(param);
-			}, async, waitForDone, strand, std::forward<Callable>(onCallDone));
-		}
+			}, async, waitForDone, strand, std::forward<Callable>(onCallDone));			
 	}
 
 	void dumpWorkersLoad(std::ostream& collector)const;
@@ -84,6 +78,7 @@ private:
 	const AsyncWorkerPtr& getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle);
 
 	void createWorkersIfNotInitialized(size_t poolSize);
+	CallbackType fetchStoredCallbackByServiceId(const std::string& idStr);
 
 	//Invoke the actual call wrapped in cb/onDone
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);

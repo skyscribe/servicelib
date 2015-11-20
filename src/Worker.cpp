@@ -55,7 +55,7 @@ void runTheCall(Callable action, Callable onDone){
 
 bool AsyncWorker::doJob(Callable call, Callable onDone){
 	{
-		std::unique_lock<std::mutex> lock(queueLock_);
+		std::lock_guard<std::mutex> lock(queueLock_);
 		calls_.push_back({call, onDone});
 	}
 	queueCond_.notify_all();

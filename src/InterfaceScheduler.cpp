@@ -32,12 +32,12 @@ void InterfaceScheduler::stop(){
 }
 
 void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action){
-	unique_lock<mutex> guard(mappingLock_);
+	lock_guard<mutex> guard(mappingLock_);
 	actionMapping_[idStr] = action;
 }
 
 void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
-	unique_lock<mutex> guard(mappingLock_);	
+	lock_guard<mutex> guard(mappingLock_);	
 	if (actionMapping_.find(idStr) != actionMapping_.end())
 		actionMapping_.erase(idStr);
 	else
@@ -66,7 +66,7 @@ const AsyncWorkerPtr& InterfaceScheduler::getWorkerForSchedule(const std::string
 }
 
 const AsyncWorkerPtr& InterfaceScheduler::getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle){
-	std::unique_lock<mutex> guard(strandsLock_);
+	std::lock_guard<mutex> guard(strandsLock_);
 	if (strands_.find(strand) == strands_.end())
 		strands_[strand] = idle;
 	return strands_[strand];
@@ -83,4 +83,13 @@ void InterfaceScheduler::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad)
 	totalLoad = 0;
 	for (auto worker : asyncWorkers_)
 		totalLoad += worker->getLoad();
+}
+
+CallbackType InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr){
+	std::lock_guard<std::mutex> guard(mappingLock_);
+	auto actIt = actionMapping_.find(idStr);
+	if (actIt == actionMapping_.end())
+		return CallbackType();
+	else
+		return actIt->second; 
 }
