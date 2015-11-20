@@ -14,7 +14,7 @@ public:
 	void start(size_t asyncPoolSize = defaultPoolSize);
 	void stop();
 
-	void registerInterface(const std::string& idStr, CallbackType action);
+	void registerInterface(const std::string& idStr, CallbackType action, std::string typeId);
 	void unRegiterInterface(const std::string& idStr);
 
 	//Schedule a previously registered interface cally by CallProperty (see its definition)
@@ -36,23 +36,33 @@ private:
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
 		const std::string& strand, const Args& ... args){
-		auto action = fetchStoredCallbackByServiceId(idStr);
+		//do type checking to make sure the caller fill the correct parameters as required
+		typedef ParamArgs<Args ...> ActualType;
+		auto actionInfo = fetchStoredCallbackByServiceId(idStr);
+		auto action = actionInfo.first;
 		if (!action)
 			return false;
-		else
-			return invokeCall([args..., action]() -> bool{
-				ParamArgs<Args ...> param(args...);
-				return action(param);
-			}, async, waitForDone, strand, std::forward<Callable>(onCallDone));			
+
+		if ((ActualType::getType() != actionInfo.second)){
+			std::string err("Expected type: <" + actionInfo.second + ">, actual:" + ActualType::getType());
+			throw std::invalid_argument(err);
+		}
+
+		return invokeCall([args..., action]() -> bool{
+			ActualType param(args...);
+			return action(param);
+		}, async, waitForDone, strand, std::forward<Callable>(onCallDone));			
 	}
 
 	void createWorkersIfNotInitialized(size_t poolSize);
-	CallbackType fetchStoredCallbackByServiceId(const std::string& idStr);
+
+	typedef std::pair<CallbackType, std::string> ActionStore;
+	ActionStore fetchStoredCallbackByServiceId(const std::string& idStr);
 
 	//Invoke the actual call wrapped in cb/onDone
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
 
-	std::unordered_map<std::string, CallbackType> actionMapping_;
+	std::unordered_map<std::string, ActionStore> actionMapping_;
 	mutable std::mutex mappingLock_;
 
 	std::vector<AsyncWorkerPtr> asyncWorkers_;

@@ -105,3 +105,25 @@ TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
 	};
 	EXPECT_EQ(registered, getAccumulation(0, jobs));
 }
+
+TEST_F(SchedulerTest, callWithDifferentParameters_exceptionThrownOnCall){
+	atomic<bool> called(0);
+	EXPECT_THROW(sched_.interfaceCall("doSomethingA", createAsyncNonBlockProp([&](){
+		called = 1;
+		return true;
+	}), 1), std::invalid_argument);
+
+	EXPECT_NE(called, 1); //not called
+}
+
+TEST_F(SchedulerTest, registerVoidActionAndCall_noExceptionThrown){
+	ASSERT_EQ(ParamArgs<>::getType(), typeid(std::tuple<>).name());
+	EXPECT_NO_THROW(registerInterfaceFor<>(sched_, "some service", 
+		[](const ParamArgs<>&) -> bool{ return true;}));
+}
+
+TEST_F(SchedulerTest, registerEmptyAction_registrationFailed){
+	std::function<bool(const ParamArgs<int>&)> emptyFunc;
+	EXPECT_THROW(registerInterfaceFor<int>(sched_, "some service",
+		emptyFunc), std::invalid_argument);
+}

@@ -18,13 +18,13 @@ void SchedulePoolTest::SetUp(){
 		EXPECT_CALL(worker, getId()).Times(::testing::AnyNumber());
 	});
 
-	sched_.registerInterface("sum", [&](const ParaArgsBase& p) -> bool {
+	registerInterfaceFor<int>(sched_, "sum", [&](const ParamArgs<int>& p) -> bool {
 		//this_thread::sleep_for(chrono::milliseconds(timeForSingleJob));
-		sharedVar_ += get<0>(static_cast<const ParamArgs<int>&>(p));
+		sharedVar_ += get<0>(p);
 		return true;
 	});
 
-	registerInterfaceFor<int>(sched_, "collect", [&](const ParamArgs<int> p)->bool{
+	registerInterfaceFor<int>(sched_, "collect", [&](const ParamArgs<int>& p)->bool{
 		lock_.lock();
 		threadMapping_.push_back({get<0>(p), this_thread::get_id()});
 		lock_.unlock();

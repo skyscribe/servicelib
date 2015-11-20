@@ -31,9 +31,11 @@ void InterfaceScheduler::stop(){
 		worker->stop();
 }
 
-void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action){
+void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action, std::string typeId){
+	if (!action)
+		throw std::invalid_argument("Empty function provided as callback, name=" + idStr);
 	lock_guard<mutex> guard(mappingLock_);
-	actionMapping_[idStr] = action;
+	actionMapping_[idStr] = {action, typeId};
 }
 
 void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
@@ -85,11 +87,11 @@ void InterfaceScheduler::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad)
 		totalLoad += worker->getLoad();
 }
 
-CallbackType InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr){
+InterfaceScheduler::ActionStore InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr){
 	std::lock_guard<std::mutex> guard(mappingLock_);
 	auto actIt = actionMapping_.find(idStr);
 	if (actIt == actionMapping_.end())
-		return CallbackType();
+		return {CallbackType(), ""};
 	else
 		return actIt->second; 
 }

@@ -3,6 +3,7 @@
 #include <tuple>
 #include <memory>
 #include <vector>
+#include <typeinfo>
 
 struct ParaArgsBase{};
 
@@ -10,6 +11,7 @@ template <class ... Args>
 struct ParamArgs : public ParaArgsBase{
     ParamArgs(const Args&... args) : parameters(args...){}
     std::tuple<Args...> parameters;
+    static const char* getType(){return typeid(std::tuple<Args...>).name();}
 };
 
 template <std::size_t I, class ... Types>
