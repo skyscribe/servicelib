@@ -51,11 +51,11 @@ size_t SchedulePoolTest::scheduleAllJobs(atomic<int>& done, size_t jobCnt, const
 		const string& strand){
 	return profileFor([&]{
 		for (int i = 0; i < jobCnt; ++i)
-			sched_.interfaceCall(jobName, true, false, [&]()->bool{
+			sched_.interfaceCall(jobName, createAsyncNonBlockProp([&]()->bool{
 					if (onJobDone)
 						onJobDone();
 					done++;
-				}, strand, getParam(i));
+				}, strand), getParam(i));
 	}, desc, false /*don't print*/);		
 }
 

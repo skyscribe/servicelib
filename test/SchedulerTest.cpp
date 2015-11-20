@@ -25,12 +25,13 @@ TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithC
 	//const size_t consumedMs = 5;
 
 	size_t dur = profileFor([&]{
-		sched_.interfaceCall("doSomethingB", true, true, [&]()->bool{
+		CallProperty prop = {true, true, [&]()->bool{
 			called = true;
 			ctxId = this_thread::get_id();		
 			//this_thread::sleep_for(chrono::milliseconds(consumedMs));
 			//cout << "SyncJob callback happen!" << endl;
-		}, "", true, 133);
+		}, ""};
+		sched_.interfaceCall("doSomethingB", std::forward<CallProperty>(prop), true, 133);
 	});
 	
 	//EXPECT_GT(dur, consumedMs);
@@ -42,10 +43,10 @@ TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithC
 TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithoutBlocking){
 	atomic<bool> called(false);
 
-	sched_.interfaceCall("doSomethingB", true, false, [&]()->bool{
+	sched_.interfaceCall("doSomethingB", createAsyncNonBlockProp([&]()->bool{
 		//std::cout << "Calling B asynchronously done" << std::endl;
 		called = true;
-	}, "", false, 131);
+	}), false, 131);
 
 	while ((!called))
 		this_thread::yield();
@@ -58,18 +59,18 @@ TEST_F(SchedulerTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
 	auto var = make_shared<atomic<int>>(0);
 
 	size_t dur = profileFor([&]{
-		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
+		sched_.interfaceCall("doSomethingB", createAsyncNonBlockProp([=]() -> bool{
 			//This call can wait on condition to be set only after calling site exit interfaceCall
 			while ((*var) != 1)
 				this_thread::yield();
 			*var = 2;
-		}, "", false, 131);
+		}), false, 131);
 
-		sched_.interfaceCall("doSomethingB", true, false, [=]() -> bool{
+		sched_.interfaceCall("doSomethingB", createAsyncNonBlockProp([=]() -> bool{
 			//cout << "calling1B, var=" << *var << endl;
 			EXPECT_EQ(*var, 2);
 			*var = 3;
-		}, "", false, 111);
+		}), false, 111);
 	});
 
 	*var = 1; //will be joined during tear down
