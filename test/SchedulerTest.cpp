@@ -112,18 +112,22 @@ TEST_F(SchedulerTest, callWithDifferentParameters_exceptionThrownOnCall){
 		called = 1;
 		return true;
 	}), 1), std::invalid_argument);
-
+	sched_.stop();
 	EXPECT_NE(called, 1); //not called
 }
 
-TEST_F(SchedulerTest, registerVoidActionAndCall_noExceptionThrown){
+////////////////////////////////////////////////////////////////////////////////
+//Type checker
+TEST(SchedulerTypeChecker, registerVoidActionAndCall_noExceptionThrown){
+	InterfaceScheduler sched;
 	ASSERT_EQ(ParamArgs<>::getType(), typeid(std::tuple<>).name());
-	EXPECT_NO_THROW(registerInterfaceFor<>(sched_, "some service", 
+	EXPECT_NO_THROW(registerInterfaceFor<>(sched, "some service", 
 		[](const ParamArgs<>&) -> bool{ return true;}));
 }
 
-TEST_F(SchedulerTest, registerEmptyAction_registrationFailed){
+TEST(SchedulerTypeChecker, registerEmptyAction_registrationFailed){
+	InterfaceScheduler sched;
 	std::function<bool(const ParamArgs<int>&)> emptyFunc;
-	EXPECT_THROW(registerInterfaceFor<int>(sched_, "some service",
+	EXPECT_THROW(registerInterfaceFor<int>(sched, "some service",
 		emptyFunc), std::invalid_argument);
 }
