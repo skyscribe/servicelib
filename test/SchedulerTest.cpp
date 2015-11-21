@@ -5,6 +5,9 @@
 #include <thread>
 #include <atomic>
 #include <string>
+
+#include "gmock/gmock.h"
+
 using namespace std;
 
 TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
@@ -77,7 +80,23 @@ TEST_F(SchedulerTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
 }
 
 //Need stress test for concurrency check!
-class SchedulerRegistrationTest : public SchedulerTest{};
+class SchedulerRegistrationTest : public SchedulerTest{
+protected:
+	std::vector<int> steps_;
+	const std::vector<int> exp_ = {1,2,3,4};
+	const std::string name_ = "service"; //doesn't matter
+	std::mutex stepsMutex_;
+
+	void appendStep(int i){
+		std::lock_guard<mutex> guard(stepsMutex_);
+		steps_.push_back(i);
+	};
+public:
+	bool markStepAction(const ParamArgs<int>& p){
+		appendStep(get<0>(p));
+		return true;
+	}
+};
 TEST_F(SchedulerRegistrationTest, concurrentRegister_registeredSuccessfully){
 	atomic<int> registered(0);
 
@@ -105,6 +124,29 @@ TEST_F(SchedulerRegistrationTest, concurrentRegister_registeredSuccessfully){
 		return result;
 	};
 	EXPECT_EQ(registered, getAccumulation(0, jobs));
+}
+
+TEST_F(SchedulerRegistrationTest, subscribeForInterfaceRegisterd_notifiedOnRegistration){
+	appendStep(1);
+	sched_.subscribeForRegistration(name_, [&]{appendStep(3);});
+	appendStep(2);
+	registerInterfaceFor<int>(sched_, name_, std::bind(&SchedulerRegistrationTest::markStepAction,
+			this, std::placeholders::_1));
+	sched_.interfaceCall(name_, createAsyncNonBlockProp(Callable()), 4);
+	sched_.stop();
+	EXPECT_THAT(steps_, ::testing::Eq(exp_));
+}
+
+TEST_F(SchedulerRegistrationTest, subscribeForRegisteredInterface_notifiedImmediately){
+	appendStep(1);
+	registerInterfaceFor<int>(sched_, name_, std::bind(&SchedulerRegistrationTest::markStepAction,
+			this, std::placeholders::_1));
+	sched_.subscribeForRegistration(name_, [&]{appendStep(2);});
+	appendStep(3);
+
+	sched_.interfaceCall(name_, createAsyncNonBlockProp(Callable()), 4);
+	sched_.stop();
+	EXPECT_THAT(steps_, ::testing::Eq(exp_));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

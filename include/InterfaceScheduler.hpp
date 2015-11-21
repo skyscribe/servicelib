@@ -17,6 +17,8 @@ public:
 	void registerInterface(const std::string& idStr, CallbackType action, std::string typeId);
 	void unRegiterInterface(const std::string& idStr);
 	bool isServiceRegistered(const std::string& idStr) const;
+	//Setup a watcher for interface registration - cb shall never block!
+	void subscribeForRegistration(const std::string& idStr, std::function<void()>&& cb);
 
 	//Schedule a previously registered interface cally by CallProperty (see its definition)
 	template <class ... Args>
@@ -63,7 +65,11 @@ private:
 	//Invoke the actual call wrapped in cb/onDone
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
 
+	//Notify all subscribers - not protected
+	void notifySubscribersOnRegistration(const std::string& id);
+
 	std::unordered_map<std::string, CallbackState> actionMapping_;
+	std::unordered_map<std::string, std::vector<std::function<void()>>> notifyMapping_;
 	mutable std::mutex mappingLock_;
 
 	std::vector<AsyncWorkerPtr> asyncWorkers_;

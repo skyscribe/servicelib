@@ -31,11 +31,29 @@ void InterfaceScheduler::stop(){
 		worker->stop();
 }
 
+void InterfaceScheduler::subscribeForRegistration(const std::string& idStr, std::function<void()>&& cb){
+	lock_guard<mutex> guard(mappingLock_);
+	if (actionMapping_.find(idStr) != actionMapping_.end())
+		cb();
+	else
+		notifyMapping_[idStr].push_back(cb);
+}
+
+
 void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action, std::string typeId){
 	if (!action)
 		throw std::invalid_argument("Empty function provided as callback, name=" + idStr);
 	lock_guard<mutex> guard(mappingLock_);
 	actionMapping_[idStr] = {action, typeId};
+	notifySubscribersOnRegistration(idStr);
+}
+
+void InterfaceScheduler::notifySubscribersOnRegistration(const std::string& idStr){
+	if (notifyMapping_.find(idStr) != notifyMapping_.end()){
+		for (auto cb : notifyMapping_[idStr])
+			cb();
+		notifyMapping_.erase(idStr);
+	}	
 }
 
 void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
