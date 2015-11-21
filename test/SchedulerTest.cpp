@@ -130,4 +130,8 @@ TEST(SchedulerTypeChecker, registerEmptyAction_registrationFailed){
 	std::function<bool(const ParamArgs<int>&)> emptyFunc;
 	EXPECT_THROW(registerInterfaceFor<int>(sched, "some service",
 		emptyFunc), std::invalid_argument);
+	//below register won't compile
+	//std::function<void(const ParamArgs<int>&)> badFunc;
+	//EXPECT_THROW(registerInterfaceFor<int>(sched, "some service",
+	//	badFunc), std::invalid_argument);
 }
