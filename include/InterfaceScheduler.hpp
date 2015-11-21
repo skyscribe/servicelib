@@ -16,6 +16,7 @@ public:
 
 	void registerInterface(const std::string& idStr, CallbackType action, std::string typeId);
 	void unRegiterInterface(const std::string& idStr);
+	bool isServiceRegistered(const std::string& idStr) const;
 
 	//Schedule a previously registered interface cally by CallProperty (see its definition)
 	template <class ... Args>
@@ -56,13 +57,13 @@ private:
 
 	void createWorkersIfNotInitialized(size_t poolSize);
 
-	typedef std::pair<CallbackType, std::string> ActionStore;
-	ActionStore fetchStoredCallbackByServiceId(const std::string& idStr);
+	typedef std::pair<CallbackType, std::string> CallbackState;
+	CallbackState fetchStoredCallbackByServiceId(const std::string& idStr);
 
 	//Invoke the actual call wrapped in cb/onDone
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
 
-	std::unordered_map<std::string, ActionStore> actionMapping_;
+	std::unordered_map<std::string, CallbackState> actionMapping_;
 	mutable std::mutex mappingLock_;
 
 	std::vector<AsyncWorkerPtr> asyncWorkers_;

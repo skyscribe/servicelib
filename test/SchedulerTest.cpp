@@ -77,25 +77,26 @@ TEST_F(SchedulerTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
 }
 
 //Need stress test for concurrency check!
-TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
-	InterfaceScheduler sched;
+class SchedulerRegistrationTest : public SchedulerTest{};
+TEST_F(SchedulerRegistrationTest, concurrentRegister_registeredSuccessfully){
 	atomic<int> registered(0);
 
 	auto service = [&](const ParamArgs<int>& par){ registered += get<0>(par); return true;};
 	std::vector<shared_ptr<thread>> threads;
 	const size_t jobs = 8;
 
-	sched.start(1);
 	for (auto i = 0; i < jobs; ++i)
-		threads.push_back(make_shared<thread>([&sched, &service, i]() -> void{
+		threads.push_back(make_shared<thread>([&, i]() -> void{
 			stringstream strm;
 			strm << "serv" << i; //to_string not supported on cygwin?
-			registerInterfaceFor<int>(sched, strm.str(), service);
+			registerInterfaceFor<int>(sched_, strm.str(), service);
 			CallProperty prop = {true, true, Callable(), ""};
-			EXPECT_TRUE(sched.interfaceCall(strm.str(), forward<CallProperty>(prop), i));
+			EXPECT_TRUE(sched_.interfaceCall(strm.str(), forward<CallProperty>(prop), i));
 		}));
+
 	for (auto inst : threads)
 		inst->join();
+	sched_.stop();
 
 	auto getAccumulation = [](int start, int end)->int{
 		int result = 0;
@@ -106,18 +107,23 @@ TEST_F(SchedulerTest, concurrentRegister_registeredSuccessfully){
 	EXPECT_EQ(registered, getAccumulation(0, jobs));
 }
 
-TEST_F(SchedulerTest, callWithDifferentParameters_exceptionThrownOnCall){
+////////////////////////////////////////////////////////////////////////////////
+//Type checker
+TEST(SchedulerTypeChecker, callWithDifferentParameters_exceptionThrownOnCall){
 	atomic<bool> called(0);
-	EXPECT_THROW(sched_.interfaceCall("doSomethingA", createAsyncNonBlockProp([&](){
+	InterfaceScheduler sched;
+	registerInterfaceFor<int, int>(sched, "service", [](const ParamArgs<int, int>&){return true;});
+	sched.start(1);
+
+	EXPECT_THROW(sched.interfaceCall("service", createAsyncNonBlockProp([&](){
 		called = 1;
 		return true;
 	}), 1), std::invalid_argument);
-	sched_.stop();
+	sched.stop();
+
 	EXPECT_NE(called, 1); //not called
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//Type checker
 TEST(SchedulerTypeChecker, registerVoidActionAndCall_noExceptionThrown){
 	InterfaceScheduler sched;
 	ASSERT_EQ(ParamArgs<>::getType(), typeid(std::tuple<>).name());

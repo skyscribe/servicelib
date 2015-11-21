@@ -87,11 +87,16 @@ void InterfaceScheduler::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad)
 		totalLoad += worker->getLoad();
 }
 
-InterfaceScheduler::ActionStore InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr){
+InterfaceScheduler::CallbackState InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr){
 	std::lock_guard<std::mutex> guard(mappingLock_);
 	auto actIt = actionMapping_.find(idStr);
 	if (actIt == actionMapping_.end())
 		return {CallbackType(), ""};
 	else
 		return actIt->second; 
+}
+
+bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{
+	std::lock_guard<std::mutex> guard(mappingLock_);
+	return actionMapping_.find(idStr) != actionMapping_.end();
 }
