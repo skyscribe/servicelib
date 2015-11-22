@@ -25,7 +25,6 @@ void InterfaceScheduler::createWorkersIfNotInitialized(size_t poolSize){
 		assert(asyncWorkers_.size() == poolSize);	
 }
 
-
 void InterfaceScheduler::stop(){
 	for(auto worker : asyncWorkers_)
 		worker->stop();
@@ -62,6 +61,11 @@ void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
 		actionMapping_.erase(idStr);
 	else
 		std::cout << "Non-existent interface type:" << idStr << std::endl;
+}
+
+bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{
+	std::lock_guard<std::mutex> guard(mappingLock_);
+	return actionMapping_.find(idStr) != actionMapping_.end();
 }
 
 bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone){
@@ -105,16 +109,22 @@ void InterfaceScheduler::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad)
 		totalLoad += worker->getLoad();
 }
 
-InterfaceScheduler::CallbackState InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr){
-	std::lock_guard<std::mutex> guard(mappingLock_);
-	auto actIt = actionMapping_.find(idStr);
-	if (actIt == actionMapping_.end())
-		return {CallbackType(), ""};
-	else
-		return actIt->second; 
+bool InterfaceScheduler::isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType, CallbackType& action){
+	std::string storedType;
+	if(!fetchStoredCallbackByServiceId(idStr, action, storedType))
+		return false;
+
+	if ((callType != storedType))
+		throw std::invalid_argument("Expected type: <" + storedType + ">, actual:" + callType);
+	return true;
 }
 
-bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{
+bool InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr){
 	std::lock_guard<std::mutex> guard(mappingLock_);
-	return actionMapping_.find(idStr) != actionMapping_.end();
+	const auto& actIt = actionMapping_.find(idStr);
+	if (actIt == actionMapping_.end())
+		return false;
+
+	std::tie(call, typeStr) = actIt->second;
+	return true;
 }

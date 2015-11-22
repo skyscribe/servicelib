@@ -23,7 +23,7 @@ public:
 	//Schedule a previously registered interface cally by CallProperty (see its definition)
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, CallProperty&& prop, const Args& ...args){
-		return interfaceCall<Args ...>(idStr, prop.async, prop.waitForDone, std::forward<Callable>(prop.onCallDone),
+		return checkAndInvokeCall<Args ...>(idStr, prop.async, prop.waitForDone, std::forward<Callable>(prop.onCallDone),
 			prop.strand, args...);
 	}
 
@@ -34,33 +34,24 @@ private:
 	InterfaceScheduler& operator=(const InterfaceScheduler&) = delete;
 	const AsyncWorkerPtr& getWorkerForSchedule(const std::string& strand);
 	const AsyncWorkerPtr& getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle);
+	void createWorkersIfNotInitialized(size_t poolSize);
 
 	//Actual call under the hood
 	template <class ... Args>
-	bool interfaceCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
+	inline bool checkAndInvokeCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
 		const std::string& strand, const Args& ... args){
-		//do type checking to make sure the caller fill the correct parameters as required
 		typedef ParamArgs<Args ...> ActualType;
-		auto actionInfo = fetchStoredCallbackByServiceId(idStr);
-		auto action = actionInfo.first;
-		if (!action)
+		CallbackType action;
+		if(!isCallRegisteredAndTypesMatch(idStr, ActualType::getType(), action))
 			return false;
-
-		if ((ActualType::getType() != actionInfo.second)){
-			std::string err("Expected type: <" + actionInfo.second + ">, actual:" + ActualType::getType());
-			throw std::invalid_argument(err);
-		}
 
 		return invokeCall([args..., action]() -> bool{
 			ActualType param(args...);
 			return action(param);
 		}, async, waitForDone, strand, std::forward<Callable>(onCallDone));			
 	}
-
-	void createWorkersIfNotInitialized(size_t poolSize);
-
-	typedef std::pair<CallbackType, std::string> CallbackState;
-	CallbackState fetchStoredCallbackByServiceId(const std::string& idStr);
+	bool isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType, CallbackType& action);
+	bool fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr);
 
 	//Invoke the actual call wrapped in cb/onDone
 	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
@@ -68,6 +59,7 @@ private:
 	//Notify all subscribers - not protected
 	void notifySubscribersOnRegistration(const std::string& id);
 
+	typedef std::pair<CallbackType, std::string> CallbackState;
 	std::unordered_map<std::string, CallbackState> actionMapping_;
 	std::unordered_map<std::string, std::vector<std::function<void()>>> notifyMapping_;
 	mutable std::mutex mappingLock_;
