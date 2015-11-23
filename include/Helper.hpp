@@ -1,5 +1,5 @@
 #pragma once
-
+#include "InterfaceScheduler.hpp"
 #include <functional>
 #include <string>
 #include <chrono>
@@ -32,4 +32,10 @@ inline void registerInterfaceFor(InterfaceScheduler& sched, const std::string& i
 	sched.registerInterface(idStr, [=](const ParaArgsBase& p) -> bool{
 		return func(static_cast<const ActualType&>(p));
 	}, ActualType::getType());
+}
+
+//example call: asyncCall(sched, "domain.serviceId", arg1, arg2, ...);
+template <class ...Args>
+bool asyncCall(InterfaceScheduler& sched, const std::string& serviceId, Args... args){
+	return sched.interfaceCall(serviceId, createAsyncNonBlockProp(Callable()), args...);
 }

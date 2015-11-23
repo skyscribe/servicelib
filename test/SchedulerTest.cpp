@@ -90,7 +90,14 @@ protected:
 	void appendStep(int i){
 		std::lock_guard<mutex> guard(stepsMutex_);
 		steps_.push_back(i);
-	};
+	}
+
+	void invokeCallAndCheckSteps(){
+		asyncCall(sched_, name_, 4);
+		sched_.stop();
+		EXPECT_THAT(steps_, ::testing::Eq(exp_));	
+	}
+
 public:
 	bool markStepAction(const ParamArgs<int>& p){
 		appendStep(get<0>(p));
@@ -132,9 +139,7 @@ TEST_F(SchedulerRegistrationTest, subscribeForInterfaceRegisterd_notifiedOnRegis
 	appendStep(2);
 	registerInterfaceFor<int>(sched_, name_, std::bind(&SchedulerRegistrationTest::markStepAction,
 			this, std::placeholders::_1));
-	sched_.interfaceCall(name_, createAsyncNonBlockProp(Callable()), 4);
-	sched_.stop();
-	EXPECT_THAT(steps_, ::testing::Eq(exp_));
+	invokeCallAndCheckSteps();
 }
 
 TEST_F(SchedulerRegistrationTest, subscribeForRegisteredInterface_notifiedImmediately){
@@ -143,10 +148,7 @@ TEST_F(SchedulerRegistrationTest, subscribeForRegisteredInterface_notifiedImmedi
 			this, std::placeholders::_1));
 	sched_.subscribeForRegistration(name_, [&]{appendStep(2);});
 	appendStep(3);
-
-	sched_.interfaceCall(name_, createAsyncNonBlockProp(Callable()), 4);
-	sched_.stop();
-	EXPECT_THAT(steps_, ::testing::Eq(exp_));
+	invokeCallAndCheckSteps();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
