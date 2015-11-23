@@ -42,7 +42,11 @@ void InterfaceScheduler::subscribeForRegistration(const std::string& idStr, std:
 void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackType action, std::string typeId){
 	if (!action)
 		throw std::invalid_argument("Empty function provided as callback, name=" + idStr);
+	
 	lock_guard<mutex> guard(mappingLock_);
+	if (actionMapping_.find(idStr) != actionMapping_.end())
+		throw std::logic_error("Duplicated registration for " + idStr + " - unregister firstly");
+	
 	actionMapping_[idStr] = {action, typeId};
 	notifySubscribersOnRegistration(idStr);
 }

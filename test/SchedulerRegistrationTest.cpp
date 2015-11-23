@@ -12,6 +12,7 @@ protected:
     const std::vector<int> exp_ = {1,2,3,4};
     const std::string name_ = "service"; //doesn't matter
     std::mutex stepsMutex_;
+    std::function<bool(const ParamArgs<int>&)> action_;
 
     void appendStep(int i){
         std::lock_guard<mutex> guard(stepsMutex_);
@@ -22,6 +23,11 @@ protected:
         asyncCall(sched_, name_, 4);
         sched_.stop();
         EXPECT_THAT(steps_, ::testing::Eq(exp_));   
+    }
+
+    virtual void SetUp() override{
+        action_ = std::bind(&SchedulerRegistrationTest::markStepAction,
+            this, std::placeholders::_1);
     }
 
 public:
@@ -64,16 +70,19 @@ TEST_F(SchedulerRegistrationTest, subscribeForInterfaceRegisterd_notifiedOnRegis
     appendStep(1);
     sched_.subscribeForRegistration(name_, [&]{appendStep(3);});
     appendStep(2);
-    registerInterfaceFor<int>(sched_, name_, std::bind(&SchedulerRegistrationTest::markStepAction,
-            this, std::placeholders::_1));
+    registerInterfaceFor<int>(sched_, name_, action_);
     invokeCallAndCheckSteps();
 }
 
 TEST_F(SchedulerRegistrationTest, subscribeForRegisteredInterface_notifiedImmediately){
     appendStep(1);
-    registerInterfaceFor<int>(sched_, name_, std::bind(&SchedulerRegistrationTest::markStepAction,
-            this, std::placeholders::_1));
+    registerInterfaceFor<int>(sched_, name_, action_);
     sched_.subscribeForRegistration(name_, [&]{appendStep(2);});
     appendStep(3);
     invokeCallAndCheckSteps();
+}
+
+TEST_F(SchedulerRegistrationTest, registerTwiceForSameInterface_secondTryShallThrow){
+    registerInterfaceFor<int>(sched_, name_, action_);
+    EXPECT_THROW(registerInterfaceFor<int>(sched_, name_, action_), std::logic_error);
 }
