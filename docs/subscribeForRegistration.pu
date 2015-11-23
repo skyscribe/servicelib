@@ -1,0 +1,22 @@
+@startuml
+title subscribe for interface registration
+!pragma teosz true
+
+actor asynActor
+asyncActor -> InterfaceScheduler: subscribeForRegistration(name, cb)
+activate InterfaceScheduler #Yellow
+alt interface not registered yet
+InterfaceScheduler -> InterfaceScheduler: append to notifier list
+
+serviceImpl -> InterfaceScheduler: registerInterfaceFor<X, Y>(name, callbackType)
+InterfaceScheduler -> InterfaceScheduler : wrap closure and store for query
+InterfaceScheduler -> InterfaceScheduler : notify all watchers
+& InterfaceScheduler --[#Red]> asyncActor : calling back
+InterfaceScheduler -> InterfaceScheduler : clear all attached
+& InterfaceScheduler --> serviceImpl : registeration result
+
+else interface already registered
+InterfaceScheduler --> asyncActor: calling back
+end
+deactivate InterfaceScheduler
+@enduml

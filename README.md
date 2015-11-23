@@ -77,11 +77,23 @@ The `interfaceScheduler.hpp` is the main interface for external use, others shal
 ![CRC Diagram](docs/crc.png)
 
 ## Interface Registration
+
+### Sequential Call after Registration
 An interface can only be called after it's registered - thread safety is guaranteed in interfaceScheduler level so concurrent registration/unregistration is possible.
 
 ![Registration](docs/registerInterface.png)
 
+---
+### Subscribe for Registration
+You can also setup a watcher (subscribe) to interface registration asynchronously, and get notified (called back) once service is registered by service provider; if by the point of subscription, expected service was alredy registered, the callback would be invoked immediately within the same context.
+
+All watchers setup before actual registration would be cleared after service registered. No race condition shall happen between subscriber and registration.
+
+![SubscribeForRegistration](docs/subscribeForRegistration.png) 
+
+---
 ## Secenario Examples
+The core part of this library is to support various calling scenarios as described in below sections.
 
 ### Synchronous and Blocking Call
 ![Synchronous and blocking call](docs/syncAndBlocking.png)
