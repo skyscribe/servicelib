@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <typeinfo>
+#include <string>
 
 struct ParaArgsBase{};
 

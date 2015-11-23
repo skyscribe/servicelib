@@ -33,8 +33,9 @@ set(libSrcs
 add_library(serviceLib STATIC ${libSrcs})
 target_link_libraries(serviceLib pthread)
 
-set(srcList
+set(testSrcs
 	test/SchedulerTest.cpp
+    test/SchedulerRegistrationTest.cpp
 	test/SchedulePoolTest.cpp
 	test/SchedulerUT.cpp
 	test/testMain.cpp
@@ -42,7 +43,7 @@ set(srcList
 	test/SchedulePoolTestFixture.cpp
 )
 
-add_executable(ut ${srcList})
+add_executable(ut ${testSrcs})
 include_directories(PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ut pthread gtest serviceLib)
 
