@@ -28,6 +28,7 @@ protected:
     virtual void SetUp() override{
         action_ = std::bind(&SchedulerRegistrationTest::markStepAction,
             this, std::placeholders::_1);
+        SchedulerTest::SetUp();
     }
 
 public:
