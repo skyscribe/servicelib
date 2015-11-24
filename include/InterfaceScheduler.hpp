@@ -9,16 +9,17 @@ class InterfaceScheduler{
 public:
 	InterfaceScheduler(AsyncWorkerQueue queue = AsyncWorkerQueue(), std::shared_ptr<SyncWorker> sync = nullptr)
 		: asyncWorkers_(queue), syncWorker_(sync), started_(0){};
+	virtual ~InterfaceScheduler(){}
 
 	static const size_t defaultPoolSize = 4;
-	void start(size_t asyncPoolSize = defaultPoolSize);
-	void stop();
+	virtual void start(size_t asyncPoolSize = defaultPoolSize);
+	virtual void stop();
 
-	void registerInterface(const std::string& idStr, CallbackType action, std::string typeId);
-	void unRegiterInterface(const std::string& idStr);
-	bool isServiceRegistered(const std::string& idStr) const;
+	virtual void registerInterface(const std::string& idStr, CallbackType action, std::string typeId);
+	virtual void unRegiterInterface(const std::string& idStr);
+	virtual bool isServiceRegistered(const std::string& idStr) const;
 	//Setup a watcher for interface registration - cb shall never block!
-	void subscribeForRegistration(const std::string& idStr, std::function<void()>&& cb);
+	virtual void subscribeForRegistration(const std::string& idStr, std::function<void()>&& cb);
 
 	//Schedule a previously registered interface cally by CallProperty (see its definition)
 	template <class ... Args>
@@ -50,11 +51,12 @@ private:
 			return action(param);
 		}, async, waitForDone, strand, std::forward<Callable>(onCallDone));			
 	}
-	bool isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType, CallbackType& action);
+
 	bool fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr);
+	virtual bool isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType, CallbackType& action);
 
 	//Invoke the actual call wrapped in cb/onDone
-	bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
+	virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
 
 	//Notify all subscribers - not protected
 	void notifySubscribersOnRegistration(const std::string& id);

@@ -29,6 +29,7 @@ include_directories(PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(libSrcs
     src/InterfaceScheduler.cpp
     src/Worker.cpp
+    src/Helper.cpp
 )
 add_library(serviceLib STATIC ${libSrcs})
 target_link_libraries(serviceLib pthread)
@@ -41,6 +42,7 @@ set(testSrcs
 	test/testMain.cpp
 	test/WorkerMock.cpp
 	test/SchedulePoolTestFixture.cpp
+    test/SchedulerMockerTest.cpp
 )
 
 add_executable(ut ${testSrcs})

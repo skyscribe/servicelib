@@ -17,6 +17,18 @@ inline size_t profileFor(std::function<void()> call, const std::string& hint = "
 	return diff.count();
 };
 
+//The default scheduler that might be shared by multiple clients if they want to, singleton object is only created
+// on first call (lazy creation)
+InterfaceScheduler& getGlobalScheduler();
+//The default scheduler can be released explictly also
+void releaseDefaultScheduler();
+void setGlobalSchedulerPurpose(bool forTesting = false);
+
+template <class ... Args, class ActionType>
+inline void registerInterfaceFor(const std::string& idStr, ActionType action){
+	registerInterfaceFor<Args ...>(getGlobalScheduler(), idStr, std::move(action));
+}
+
 template <class ... Args, class ActionType>
 inline void registerInterfaceFor(InterfaceScheduler& sched, const std::string& idStr, ActionType action){
 	//Check type-safety as possible, lambdas/binds shall have targets, while functions may not
@@ -36,6 +48,11 @@ inline void registerInterfaceFor(InterfaceScheduler& sched, const std::string& i
 
 //example call: asyncCall(sched, "domain.serviceId", arg1, arg2, ...);
 template <class ...Args>
-bool asyncCall(InterfaceScheduler& sched, const std::string& serviceId, Args... args){
+bool asyncCall(InterfaceScheduler& sched, const std::string& serviceId, const Args& ... args){
 	return sched.interfaceCall(serviceId, createAsyncNonBlockProp(Callable()), args...);
+}
+
+template <class ...Args>
+bool asyncCall(const std::string& serviceId, const Args& ... args){
+	return asyncCall(getGlobalScheduler(), serviceId, args...);
 }
