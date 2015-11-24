@@ -1,4 +1,9 @@
 #include "gtest/gtest.h"
+#include "InterfaceSchedulerMock.hpp"
+
+InterfaceScheduler* createTestScheduler(){
+    return new MockedInterfaceScheduler();
+}
 
 int main(int argc, char **argv)
 {

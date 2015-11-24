@@ -55,3 +55,6 @@ add_custom_target(runUT COMMAND bash runUT.sh 1 WORKING_DIRECTORY ${CMAKE_CURREN
 
 # generate plantuml documentations
 add_custom_target(genDocs COMMAND plant -Sdpi=150 *.pu WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs)
+
+add_executable(demo demo/demo.cpp)
+target_link_libraries(demo pthread serviceLib)
