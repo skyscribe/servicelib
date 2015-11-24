@@ -64,7 +64,7 @@ private:
 	typedef std::pair<CallbackType, std::string> CallbackState;
 	std::unordered_map<std::string, CallbackState> actionMapping_;
 	std::unordered_map<std::string, std::vector<std::function<void()>>> notifyMapping_;
-	mutable std::mutex mappingLock_;
+	mutable std::recursive_mutex mappingLock_;
 
 	std::vector<AsyncWorkerPtr> asyncWorkers_;
 	std::shared_ptr<SyncWorker> syncWorker_;

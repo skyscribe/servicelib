@@ -31,7 +31,7 @@ void InterfaceScheduler::stop(){
 }
 
 void InterfaceScheduler::subscribeForRegistration(const std::string& idStr, std::function<void()>&& cb){
-	lock_guard<mutex> guard(mappingLock_);
+	lock_guard<recursive_mutex> guard(mappingLock_);
 	if (actionMapping_.find(idStr) != actionMapping_.end())
 		cb();
 	else
@@ -43,7 +43,7 @@ void InterfaceScheduler::registerInterface(const std::string& idStr, CallbackTyp
 	if (!action)
 		throw std::invalid_argument("Empty function provided as callback, name=" + idStr);
 	
-	lock_guard<mutex> guard(mappingLock_);
+	lock_guard<recursive_mutex> guard(mappingLock_);
 	if (actionMapping_.find(idStr) != actionMapping_.end())
 		throw std::logic_error("Duplicated registration for " + idStr + " - unregister firstly");
 	
@@ -60,7 +60,7 @@ void InterfaceScheduler::notifySubscribersOnRegistration(const std::string& idSt
 }
 
 void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
-	lock_guard<mutex> guard(mappingLock_);	
+	lock_guard<recursive_mutex> guard(mappingLock_);	
 	if (actionMapping_.find(idStr) != actionMapping_.end())
 		actionMapping_.erase(idStr);
 	else
@@ -68,7 +68,7 @@ void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
 }
 
 bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{
-	std::lock_guard<std::mutex> guard(mappingLock_);
+	lock_guard<recursive_mutex> guard(mappingLock_);
 	return actionMapping_.find(idStr) != actionMapping_.end();
 }
 
@@ -124,7 +124,7 @@ bool InterfaceScheduler::isCallRegisteredAndTypesMatch(const std::string& idStr,
 }
 
 bool InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr){
-	std::lock_guard<std::mutex> guard(mappingLock_);
+	std::lock_guard<recursive_mutex> guard(mappingLock_);
 	const auto& actIt = actionMapping_.find(idStr);
 	if (actIt == actionMapping_.end())
 		return false;
