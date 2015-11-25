@@ -24,8 +24,8 @@ public:
 	//Schedule a previously registered interface cally by CallProperty (see its definition)
 	template <class ... Args>
 	bool interfaceCall(const std::string& idStr, CallProperty&& prop, const Args& ...args){
-		return checkAndInvokeCall<Args ...>(idStr, prop.async, prop.waitForDone, std::forward<Callable>(prop.onCallDone),
-			prop.strand, args...);
+		return checkAndInvokeCall<Args ...>(idStr, prop.async, prop.waitForDone, 
+			std::forward<Callable>(prop.onCallDone), prop.strand, args...);
 	}
 
 private:
@@ -34,8 +34,8 @@ private:
 
 	//Actual call under the hood
 	template <class ... Args>
-	inline bool checkAndInvokeCall(const std::string& idStr, bool async, bool waitForDone, Callable&& onCallDone,
-		const std::string& strand, const Args& ... args){
+	inline bool checkAndInvokeCall(const std::string& idStr, bool async, bool waitForDone, 
+			Callable&& onCallDone, const std::string& strand, const Args& ... args){
 		typedef ParamArgs<Args ...> ActualType;
 		CallbackType action;
 		if(!isCallRegisteredAndTypesMatch(idStr, ActualType::getType(), action))
@@ -48,7 +48,8 @@ private:
 	}
 
 	bool fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr);
-	virtual bool isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType, CallbackType& action);
+	virtual bool isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType,
+		CallbackType& action);
 
 	//Invoke the actual call wrapped in cb/onDone
 	virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);

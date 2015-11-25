@@ -38,6 +38,6 @@ private:
 	std::mutex queueLock_;
 	std::atomic<bool> active_;
 	std::thread thread_;
-
-	std::atomic<size_t> outstandingJobs_; //keep track of undone jobs, may not equal to calls_.size()!
+	//keep track of undone jobs, may not equal to calls_.size()!
+	std::atomic<size_t> outstandingJobs_; 
 };

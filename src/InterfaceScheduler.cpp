@@ -65,14 +65,17 @@ bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{
 	return actionMapping_.find(idStr) != actionMapping_.end();
 }
 
-bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone){
+bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, 
+		const std::string& strand, Callable&& onDone){
 	if (!async)
 		return syncWorker_->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 	else
-		return asyncDispather_->scheduleJob(waitForDone, strand, std::forward<Callable>(cb), std::forward<Callable>(onDone));
+		return asyncDispather_->scheduleJob(waitForDone, strand, std::forward<Callable>(cb),
+			std::forward<Callable>(onDone));
 }
 
-bool InterfaceScheduler::isCallRegisteredAndTypesMatch(const std::string& idStr, const std::string&& callType, CallbackType& action){
+bool InterfaceScheduler::isCallRegisteredAndTypesMatch(const std::string& idStr,
+		const std::string&& callType, CallbackType& action){
 	std::string storedType;
 	if(!fetchStoredCallbackByServiceId(idStr, action, storedType))
 		return false;
@@ -82,7 +85,8 @@ bool InterfaceScheduler::isCallRegisteredAndTypesMatch(const std::string& idStr,
 	return true;
 }
 
-bool InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr){
+bool InterfaceScheduler::fetchStoredCallbackByServiceId(const std::string& idStr,
+		CallbackType& call, std::string& typeStr){
 	std::lock_guard<recursive_mutex> guard(mappingLock_);
 	const auto& actIt = actionMapping_.find(idStr);
 	if (actIt == actionMapping_.end())

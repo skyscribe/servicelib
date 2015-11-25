@@ -6,16 +6,20 @@
 
 using namespace std;
 
-bool AsyncDispatcher::scheduleJob(bool waitForDone, const std::string& strand, Callable action, Callable onDone){
+bool AsyncDispatcher::scheduleJob(bool waitForDone, const std::string& strand,
+        Callable action, Callable onDone){
     if (!waitForDone)
-        return getWorkerForSchedule(strand)->doJob(std::forward<Callable>(action), std::forward<Callable>(onDone));
+        return getWorkerForSchedule(strand)->doJob(std::forward<Callable>(action),
+                std::forward<Callable>(onDone));
     else
-        return getWorkerForSchedule(strand)->doSyncJob(std::forward<Callable>(action), std::forward<Callable>(onDone));   
+        return getWorkerForSchedule(strand)->doSyncJob(std::forward<Callable>(action),
+                std::forward<Callable>(onDone));  
 }
 
 const AsyncWorkerPtr& AsyncDispatcher::getWorkerForSchedule(const std::string& strand){
-    auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
-        return a->getLoad() < b->getLoad();
+    auto it = min_element(asyncWorkers_.begin(), asyncWorkers_.end(), 
+        [](const AsyncWorkerPtr& a, const AsyncWorkerPtr& b) -> bool{
+            return a->getLoad() < b->getLoad();
     });
     //dumpWorkersLoad(cout);
     if (strand.empty())
@@ -24,7 +28,8 @@ const AsyncWorkerPtr& AsyncDispatcher::getWorkerForSchedule(const std::string& s
         return getStrandWorkerForSchedule(strand, *it);
 }
 
-const AsyncWorkerPtr& AsyncDispatcher::getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle){
+const AsyncWorkerPtr& AsyncDispatcher::getStrandWorkerForSchedule(const std::string& strand,
+        const AsyncWorkerPtr& idle){
     std::lock_guard<mutex> guard(strandsLock_);
     if (strands_.find(strand) == strands_.end())
         strands_[strand] = idle;
@@ -53,7 +58,7 @@ void AsyncDispatcher::stop(){
 void AsyncDispatcher::dumpWorkersLoad(std::ostream& collector)const{
     collector << "AsyncWorkers load info: total=" << asyncWorkers_.size() << endl;
     for (auto worker : asyncWorkers_)
-        collector << "\tWorker<" << worker->getId() << ",load=" << worker->getLoad() << endl;   
+        collector << "\tWorker<" << worker->getId() << ",load=" << worker->getLoad() << endl;  
 }
 
 void AsyncDispatcher::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad){
