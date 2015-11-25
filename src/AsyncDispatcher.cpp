@@ -69,5 +69,7 @@ void AsyncDispatcher::getStatistics(size_t& asyncWorksCnt, size_t& totalLoad){
 }
 
 void AsyncDispatcher::cancelJobsFor(const std::string& idStr){
+    for (auto worker : asyncWorkers_)
+        worker->cancelJobsFor(idStr);
     return;
 }

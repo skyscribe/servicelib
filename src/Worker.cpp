@@ -1,4 +1,5 @@
 #include "Worker.h"
+#include <algorithm>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -35,15 +36,14 @@ void AsyncWorker::run(){
 void runTheCall(Callable, Callable);
 void AsyncWorker::scheduleFirstOutstandingJob(){
 	//explicitly copy out to avoid iterator changed asynchronously
-	auto action = calls_.begin()->first;
-	auto onDone = calls_.begin()->second;
+	auto ctx = *calls_.begin();
 	calls_.erase(calls_.begin());
+	outstandingJobs_--;
 
 	//release lock during execution so other jobs can be accepted without blocking
 	queueLock_.unlock();
-	runTheCall(std::move(action), std::move(onDone));
+	runTheCall(std::move(ctx.action), std::move(ctx.onDone));
 	queueLock_.lock();
-	outstandingJobs_--;
 }
 
 void runTheCall(Callable action, Callable onDone){
@@ -56,7 +56,7 @@ void runTheCall(Callable action, Callable onDone){
 bool AsyncWorker::doJob(const std::string& name, Callable call, Callable onDone){
 	{
 		std::lock_guard<std::mutex> lock(queueLock_);
-		calls_.push_back({call, onDone});
+		calls_.push_back({call, onDone, name});
 	}
 	queueCond_.notify_all();
 	outstandingJobs_++;
@@ -98,11 +98,16 @@ void AsyncWorker::stop() {
 void AsyncWorker::waitForOutstandingJobsToFinish(){
 	while (!calls_.empty()){
 		queueLock_.unlock();
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(2));
 		queueLock_.lock();
 	}	
 }
 
 void AsyncWorker::cancelJobsFor(const std::string& name){
-	
+	std::lock_guard<std::mutex> lock(queueLock_);
+	calls_.erase(std::remove_if(calls_.begin(), calls_.end(), [&](const JobContext& it){
+		return it.id == name;
+	}), calls_.end());
+	outstandingJobs_ = calls_.size();
+	cout << "after cancel, outstandingJobs_:" << outstandingJobs_ << endl;
 }

@@ -32,13 +32,18 @@ private:
 	void run();
 	void scheduleFirstOutstandingJob();
 	void waitForOutstandingJobsToFinish();
-	std::vector<std::pair<Callable, Callable>> calls_;
+	typedef struct{
+		Callable action;
+		Callable onDone;
+		std::string id;
+	}JobContext;
+	std::vector<JobContext> calls_;
 
 	std::atomic<bool> ready_;
 	std::condition_variable queueCond_;
 	std::mutex queueLock_;
 	std::atomic<bool> active_;
 	std::thread thread_;
-	//keep track of undone jobs, may not equal to calls_.size()!
+	//keep track of undone jobs - atomic is faster than mutex protected size
 	std::atomic<size_t> outstandingJobs_; 
 };

@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include <memory>
+#include <iostream>
 
 #include "AsyncDispatcher.h"
 #include "WorkerMock.hpp"
@@ -50,14 +51,15 @@ TEST_F(AsyncDispatcherTest, hasJobsRunning_jobsCancelled){
 	atomic<bool> jobStarted(false);
 	atomic<int> calledCounter(0);
 
-	//mimic the long-lasting job
+	//mimic the long-lasting job to block the queue
 	auto syncJob = [&]()->bool{
+		cout << "job started on " << this_thread::get_id() << endl;
 		jobStarted = true;
 		calledCounter++;
 		while(!jobDoneFlag)
 			std::this_thread::yield();
+		cout << "worker job done!" << endl;
 	};
-	
 	// all jobs in a strand in worker 1
 	for (auto i : {1,2,3})
 		dispatcher_.scheduleJob(serviceName, doNothing, syncJob, false, "test");
@@ -66,7 +68,9 @@ TEST_F(AsyncDispatcherTest, hasJobsRunning_jobsCancelled){
 	while(!jobStarted)
 		std::this_thread::yield();
 	dispatcher_.cancelJobsFor(serviceName);
+	cout << "Cancelling jobs " << endl;
 
 	jobDoneFlag = true;
+	cout << "Ask worker to unblock outstanding" << endl;
 	EXPECT_EQ(calledCounter, 1);
 }
