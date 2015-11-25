@@ -5,10 +5,10 @@
 #include <mutex>
 #include <atomic>
 
+class AsyncDispatcher;
 class InterfaceScheduler{
 public:
-	InterfaceScheduler(AsyncWorkerQueue queue = AsyncWorkerQueue(), std::shared_ptr<SyncWorker> sync = nullptr)
-		: asyncWorkers_(queue), syncWorker_(sync), started_(0){};
+	InterfaceScheduler(AsyncWorkerQueue queue = AsyncWorkerQueue(), std::shared_ptr<SyncWorker> sync = nullptr);
 	virtual ~InterfaceScheduler(){}
 
 	static const size_t defaultPoolSize = 4;
@@ -28,13 +28,8 @@ public:
 			prop.strand, args...);
 	}
 
-	void dumpWorkersLoad(std::ostream& collector)const;
-	void getStatistics(size_t& asyncWorksCnt, size_t& totalLoad);
-
 private:
 	InterfaceScheduler& operator=(const InterfaceScheduler&) = delete;
-	const AsyncWorkerPtr& getWorkerForSchedule(const std::string& strand);
-	const AsyncWorkerPtr& getStrandWorkerForSchedule(const std::string& strand, const AsyncWorkerPtr& idle);
 	void createWorkersIfNotInitialized(size_t poolSize);
 
 	//Actual call under the hood
@@ -66,10 +61,8 @@ private:
 	std::unordered_map<std::string, std::vector<std::function<void()>>> notifyMapping_;
 	mutable std::recursive_mutex mappingLock_;
 
-	std::vector<AsyncWorkerPtr> asyncWorkers_;
 	std::shared_ptr<SyncWorker> syncWorker_;
 	std::atomic<bool>			started_;
 
-	std::unordered_map<std::string, AsyncWorkerPtr> strands_;
-	mutable std::mutex strandsLock_;
+	std::shared_ptr<AsyncDispatcher> asyncDispather_;
 };

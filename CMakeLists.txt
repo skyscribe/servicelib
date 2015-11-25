@@ -30,6 +30,7 @@ set(libSrcs
     src/InterfaceScheduler.cpp
     src/Worker.cpp
     src/Helper.cpp
+    src/AsyncDispatcher.cpp
 )
 add_library(serviceLib STATIC ${libSrcs})
 target_link_libraries(serviceLib pthread)

@@ -46,7 +46,6 @@ int main(int argc, char **argv)
         cout << "serving..." << endl;
         while (!stop)
             this_thread::sleep_for(std::chrono::milliseconds(5));
-        cout << "Exiting..." << endl;
     });
 
     //subscribe and call
