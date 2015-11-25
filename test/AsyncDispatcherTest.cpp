@@ -22,7 +22,7 @@ protected:
 
 	virtual void SetUp() override{
 		EXPECT_CALL(getWorker(), blockUntilReady()).Times(1);
-		EXPECT_CALL(getWorker(), stop()).Times(1);
+		EXPECT_CALL(getWorker(), stop()).Times(::testing::AnyNumber());
 		dispatcher_.start(1);
 	}
 
@@ -42,10 +42,11 @@ private:
 
 using namespace ::testing;
 const std::string serviceName = "for.testing";
-TEST_F(AsyncDispatcherTest, hasJobsRunning_jobsCancelled){
+TEST_F(AsyncDispatcherTest, cancelPendingJobs_allOfThemCancelled){
 	EXPECT_CALL(getWorker(), doJob(serviceName, _, _)).Times(3);
 	EXPECT_CALL(getWorker(), cancelJobsFor(serviceName)).Times(1);
 
+	//Using atomics to synchronize such that job state is under exact control
 	auto doNothing = []() -> bool{return true;};
 	atomic<bool> jobDoneFlag(false);
 	atomic<bool> jobStarted(false);
@@ -53,12 +54,10 @@ TEST_F(AsyncDispatcherTest, hasJobsRunning_jobsCancelled){
 
 	//mimic the long-lasting job to block the queue
 	auto syncJob = [&]()->bool{
-		cout << "job started on " << this_thread::get_id() << endl;
 		jobStarted = true;
 		calledCounter++;
 		while(!jobDoneFlag)
 			std::this_thread::yield();
-		cout << "worker job done!" << endl;
 	};
 	// all jobs in a strand in worker 1
 	for (auto i : {1,2,3})
@@ -68,9 +67,9 @@ TEST_F(AsyncDispatcherTest, hasJobsRunning_jobsCancelled){
 	while(!jobStarted)
 		std::this_thread::yield();
 	dispatcher_.cancelJobsFor(serviceName);
-	cout << "Cancelling jobs " << endl;
-
 	jobDoneFlag = true;
-	cout << "Ask worker to unblock outstanding" << endl;
+
+	//Need to stop explicitly to avoid sync atomic variables out of scope
+	dispatcher_.stop();
 	EXPECT_EQ(calledCounter, 1);
 }

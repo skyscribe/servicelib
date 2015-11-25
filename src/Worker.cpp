@@ -109,5 +109,4 @@ void AsyncWorker::cancelJobsFor(const std::string& name){
 		return it.id == name;
 	}), calls_.end());
 	outstandingJobs_ = calls_.size();
-	cout << "after cancel, outstandingJobs_:" << outstandingJobs_ << endl;
 }
