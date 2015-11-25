@@ -1,2 +1,4 @@
 bld*
 docs/*.png
+*.pdf
+*.sublime-*

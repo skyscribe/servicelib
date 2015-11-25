@@ -21,7 +21,7 @@ protected:
 
 	InterfaceScheduler sched_;
 	std::atomic<int> sharedVar_;
-	const size_t timeForSingleJob = 5;
+	const size_t timeForSingleJob = 1;
 
 	std::mutex lock_;
 	std::vector<std::pair<int, std::thread::id>> threadMapping_;
@@ -31,7 +31,7 @@ protected:
 
 	virtual void SetUp() override;
 
-	void setExpectationForMockedWorker(std::function<void(AsyncWorkerMock&)> action){
+	void setExpectationForMockedWorkers(std::function<void(AsyncWorkerMock&)> action){
 		for(auto worker : workers_)
 			action(*(static_cast<AsyncWorkerMock*>(worker.get())));
 	}
@@ -44,10 +44,11 @@ protected:
 			function<int(int)>&& getParam, const std::string& strand = "", 
 			std::function<void()>&& onJobDone = std::function<void()>(),
 			const std::string& desc = "");
-private:
-	size_t scheduleAllJobs(std::atomic<int>& done, size_t jobCnt, const std::string& jobName, 
-			function<int(int)>&& getParam, std::function<void()>&& onJobDone, const std::string& desc = "",
-			const std::string& strand = "");
 
-	size_t waitForAllJobsDone(std::atomic<int>& done, size_t jobCnt, const std::string& desc);
+	size_t scheduleAllJobs(std::atomic<int>& done, size_t jobCnt, const std::string& jobName, 
+			function<int(int)>&& getParam, const std::string& strand = "",
+			std::function<void()>&& onJobDone = std::function<void()>(),
+			const std::string& desc = "");
+
+	size_t waitForAllJobsDone(std::atomic<int>& done, size_t jobCnt, const std::string& desc = "");
 };

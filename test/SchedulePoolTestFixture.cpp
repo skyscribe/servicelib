@@ -11,7 +11,7 @@ AsyncWorkerQueue createMockedWorkers(size_t num){
 }
 
 void SchedulePoolTest::SetUp(){
-	setExpectationForMockedWorker([&](AsyncWorkerMock& worker){
+	setExpectationForMockedWorkers([&](AsyncWorkerMock& worker){
 		EXPECT_CALL(worker, blockUntilReady()).Times(1);
 		EXPECT_CALL(worker, stop()).Times(1);
 		EXPECT_CALL(worker, getLoad()).Times(::testing::AnyNumber());
@@ -40,15 +40,15 @@ pair<size_t, size_t> SchedulePoolTest::runAsyncJobsAndWaitForFinish(size_t jobCn
 		const string& desc){
 	atomic<int> done(0);
 	auto callTm = scheduleAllJobs(done, jobCnt, jobName, forward<function<int(int)>>(getParam),
-		forward<function<void()>>(onJobDone), desc, strand);
+		strand, forward<function<void()>>(onJobDone), desc);
 	auto waitTm = waitForAllJobsDone(done, jobCnt, desc);		
 	EXPECT_EQ(done, jobCnt);
 	return {callTm, waitTm};
 }
 
 size_t SchedulePoolTest::scheduleAllJobs(atomic<int>& done, size_t jobCnt, const string& jobName, 
-		function<int(int)>&& getParam, function<void()>&& onJobDone, const string& desc,
-		const string& strand){
+		function<int(int)>&& getParam, const string& strand, function<void()>&& onJobDone,
+		const string& desc){
 	return profileFor([&]{
 		for (int i = 0; i < jobCnt; ++i)
 			sched_.interfaceCall(jobName, createAsyncNonBlockProp([&]()->bool{

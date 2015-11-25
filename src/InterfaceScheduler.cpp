@@ -54,10 +54,12 @@ void InterfaceScheduler::notifySubscribersOnRegistration(const std::string& idSt
 
 void InterfaceScheduler::unRegiterInterface(const std::string& idStr){
 	lock_guard<recursive_mutex> guard(mappingLock_);	
-	if (actionMapping_.find(idStr) != actionMapping_.end())
+	if (actionMapping_.find(idStr) != actionMapping_.end()){
 		actionMapping_.erase(idStr);
-	else
+		asyncDispather_->cancelJobsFor(idStr);
+	}else{
 		std::cout << "Non-existent interface type:" << idStr << std::endl;
+	}
 }
 
 bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{

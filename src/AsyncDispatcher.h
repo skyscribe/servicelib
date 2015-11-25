@@ -13,6 +13,8 @@ public:
     virtual void start(size_t poolSize);
     virtual void stop();
     virtual bool scheduleJob(bool waitForDone, const std::string& strand, Callable action, Callable onDone);
+    //Cancel all outstanding jobs for give service as idStr
+    virtual void cancelJobsFor(const std::string& idStr);
 
     void dumpWorkersLoad(std::ostream& collector)const;
     void getStatistics(size_t& asyncWorksCnt, size_t& totalLoad);

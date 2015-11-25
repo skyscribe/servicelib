@@ -1,7 +1,8 @@
 #include "InterfaceSchedulerMock.hpp"
 #include "Helper.hpp"
 
-TEST_F(SchedulerFixture, getGlobalScheduler_schedulerCreatedOnFirstCall){
+typedef SchedulerFixture SingletonTesting;
+TEST_F(SingletonTesting, getGlobalScheduler_schedulerCreatedOnFirstCall){
     using ::testing::_;
     EXPECT_CALL(*sched_, registerInterface("example", ::testing::_, ::testing::_)).Times(1);
     EXPECT_CALL(*sched_, invokeCall_RVR(_, true /*async*/, false/*nonblock*/, _, _)).Times(1);

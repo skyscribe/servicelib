@@ -23,7 +23,7 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	const size_t jobs = poolSize_;
 	mutex lock;
 	set<thread::id> idsList;
-	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
+	setExpectationForMockedWorkers([](AsyncWorkerMock& worker){
 		EXPECT_CALL(worker, doJob(_, _)).Times(1);
 	});
 
@@ -44,7 +44,7 @@ TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsAStrand){
 	const size_t jobs = poolSize_*2;
 
-	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
+	setExpectationForMockedWorkers([](AsyncWorkerMock& worker){
 		EXPECT_CALL(worker, doJob(_, _)).Times(0);
 	});
 	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[0].get())), 
@@ -62,7 +62,7 @@ TEST_F(SchedulePoolTest, scheduleWithAffinity_allJobsRunAsAStrand){
 TEST_F(SchedulePoolTest, scheduleOnInterleavedStrand_allJobsRunOnAssociatedStrands){
 	const size_t jobs = poolSize_;
 
-	setExpectationForMockedWorker([](AsyncWorkerMock& worker){
+	setExpectationForMockedWorkers([](AsyncWorkerMock& worker){
 		EXPECT_CALL(worker, doJob(_, _)).Times(0);
 	});
 	for (auto i : {0, 2})
@@ -71,7 +71,11 @@ TEST_F(SchedulePoolTest, scheduleOnInterleavedStrand_allJobsRunOnAssociatedStran
 	EXPECT_CALL(*(static_cast<AsyncWorkerMock*>(workers_[1].get())), 
 			doJob(_, _)).Times(1);
 
-	runAsyncJobsAndWaitForFinish(jobs, "collect", getExponentOf, "strandA");
-	runAsyncJobsAndWaitForFinish(1, "collect", getExponentOf);
-	runAsyncJobsAndWaitForFinish(jobs, "collect", getExponentOf, "strandB");
+	atomic<int> done1(0), done2(0), done3(0);
+	scheduleAllJobs(done1, jobs, "sum", getExponentOf, "strandA");
+	scheduleAllJobs(done2, 1, "sum", getExponentOf);
+	scheduleAllJobs(done3, jobs, "sum", getExponentOf, "strandB");
+	waitForAllJobsDone(done1, jobs, "");
+	waitForAllJobsDone(done2, 1, "");
+	waitForAllJobsDone(done3, jobs, "");
 }
