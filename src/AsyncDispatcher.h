@@ -8,9 +8,11 @@
 class AsyncDispatcher{
 public:
     AsyncDispatcher(AsyncWorkerQueue queue) : asyncWorkers_(queue){};
-    void start(size_t poolSize);
-    void stop();
-    bool scheduleJob(bool waitForDone, const std::string& strand, Callable action, Callable onDone);
+    virtual ~AsyncDispatcher(){}
+
+    virtual void start(size_t poolSize);
+    virtual void stop();
+    virtual bool scheduleJob(bool waitForDone, const std::string& strand, Callable action, Callable onDone);
 
     void dumpWorkersLoad(std::ostream& collector)const;
     void getStatistics(size_t& asyncWorksCnt, size_t& totalLoad);

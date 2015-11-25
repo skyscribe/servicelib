@@ -4,12 +4,12 @@
 #include "DemoService.hpp"
 #include "Helper.hpp"
 
-class SchedulerTest : public ::testing::Test{
+class IntegrationTest : public ::testing::Test{
 protected:
 	InterfaceScheduler sched_;
 	DemoService service_;
 
-	SchedulerTest() : Test(), service_(sched_) {}
+	IntegrationTest() : Test(), service_(sched_) {}
 	virtual void SetUp() override{
 		sched_.start(1);
 	}

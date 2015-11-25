@@ -36,10 +36,11 @@ add_library(serviceLib STATIC ${libSrcs})
 target_link_libraries(serviceLib pthread)
 
 set(testSrcs
-	test/SchedulerTest.cpp
+	test/IntegrationTest.cpp
     test/SchedulerRegistrationTest.cpp
+    test/SchedulerUT.cpp
 	test/SchedulePoolTest.cpp
-	test/SchedulerUT.cpp
+	test/AsyncDispatcherTest.cpp
 	test/testMain.cpp
 	test/WorkerMock.cpp
 	test/SchedulePoolTestFixture.cpp

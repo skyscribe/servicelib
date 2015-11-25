@@ -1,4 +1,4 @@
-#include "SchedulerTestFixture.hpp"
+#include "IntegrationTestFixture.hpp"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -6,7 +6,7 @@
 
 using namespace std;
 
-TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
+TEST_F(IntegrationTest, callSyncInteface_calledWithinSameContextAsCaller){
 	std::string hint("synchronous call");
 	thread::id ctxId;
 	CallProperty prop = {false, true, [&]() -> bool{
@@ -18,7 +18,7 @@ TEST_F(SchedulerTest, callSyncInteface_calledWithinSameContextAsCaller){
 	EXPECT_EQ(ctxId, this_thread::get_id());
 }
 
-TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithCaller){
+TEST_F(IntegrationTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithCaller){
 	atomic<bool> called(false);
 	thread::id ctxId;
 	//const size_t consumedMs = 5;
@@ -39,7 +39,7 @@ TEST_F(SchedulerTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWithC
 	EXPECT_NE(ctxId, this_thread::get_id());
 }
 
-TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithoutBlocking){
+TEST_F(IntegrationTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithoutBlocking){
 	atomic<bool> called(false);
 
 	sched_.interfaceCall("doSomethingB", createAsyncNonBlockProp([&]()->bool{
@@ -53,7 +53,7 @@ TEST_F(SchedulerTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWithou
 	EXPECT_EQ(service_.getResult(), "Method B executed with parameters:0,131\n");
 }
 
-TEST_F(SchedulerTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
+TEST_F(IntegrationTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
 	auto start = chrono::steady_clock::now();
 	auto var = make_shared<atomic<int>>(0);
 

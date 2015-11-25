@@ -9,6 +9,8 @@ class AsyncDispatcher;
 class InterfaceScheduler{
 public:
 	InterfaceScheduler(AsyncWorkerQueue queue = AsyncWorkerQueue(), std::shared_ptr<SyncWorker> sync = nullptr);
+	InterfaceScheduler(std::shared_ptr<AsyncDispatcher> disp, std::shared_ptr<SyncWorker> sync = nullptr)
+		: asyncDispather_(disp), syncWorker_(sync), started_(false){};
 	virtual ~InterfaceScheduler(){}
 
 	static const size_t defaultPoolSize = 4;

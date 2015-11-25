@@ -1,12 +1,12 @@
 #include "Helper.hpp"
-#include "SchedulerTestFixture.hpp"
+#include "IntegrationTestFixture.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <thread>
 using namespace std;
 
 //Need stress test for concurrency check!
-class SchedulerRegistrationTest : public SchedulerTest{
+class SchedulerRegistrationTest : public IntegrationTest{
 protected:
     std::vector<int> steps_;
     const std::vector<int> exp_ = {1,2,3,4};
@@ -28,7 +28,7 @@ protected:
     virtual void SetUp() override{
         action_ = std::bind(&SchedulerRegistrationTest::markStepAction,
             this, std::placeholders::_1);
-        SchedulerTest::SetUp();
+        IntegrationTest::SetUp();
     }
 
 public:
@@ -86,4 +86,9 @@ TEST_F(SchedulerRegistrationTest, subscribeForRegisteredInterface_notifiedImmedi
 TEST_F(SchedulerRegistrationTest, registerTwiceForSameInterface_secondTryShallThrow){
     registerInterfaceFor<int>(sched_, name_, action_);
     EXPECT_THROW(registerInterfaceFor<int>(sched_, name_, action_), std::logic_error);
+}
+
+TEST_F(SchedulerRegistrationTest, invokeNotRegisteredCall_NothingCalled){
+    using ::testing::_;
+    EXPECT_FALSE(sched_.interfaceCall("unknown", CallProperty()/*doesn't matter*/));
 }
