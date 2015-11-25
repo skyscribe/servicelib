@@ -46,7 +46,7 @@ private:
 		return invokeCall([args..., action]() -> bool{
 			ActualType param(args...);
 			return action(param);
-		}, async, waitForDone, strand, std::forward<Callable>(onCallDone));			
+		}, async, waitForDone, idStr, strand, std::forward<Callable>(onCallDone));			
 	}
 
 	bool fetchStoredCallbackByServiceId(const std::string& idStr, CallbackType& call, std::string& typeStr);
@@ -54,7 +54,8 @@ private:
 		CallbackType& action);
 
 	//Invoke the actual call wrapped in cb/onDone
-	virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone);
+	virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& idStr,
+			const std::string& strand, Callable&& onDone);
 
 	//Notify all subscribers - not protected
 	void notifySubscribersOnRegistration(const std::string& id);

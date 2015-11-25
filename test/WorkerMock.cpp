@@ -9,7 +9,7 @@ AsyncWorkerMock::AsyncWorkerMock(bool callReal) : load_(0){
 		real_ = std::make_shared<AsyncWorker>();
 		ON_CALL(*this, blockUntilReady()).WillByDefault(Invoke(real_.get(), &AsyncWorker::blockUntilReady));
 		ON_CALL(*this, stop()).WillByDefault(Invoke(real_.get(), &AsyncWorker::stop));
-		ON_CALL(*this, doJob(_, _)).WillByDefault(
+		ON_CALL(*this, doJob(_, _, _)).WillByDefault(
 			DoAll(WithoutArgs(Invoke(this, &AsyncWorkerMock::increaseLoad)), 
 				Invoke(real_.get(), &AsyncWorker::doJob)));
 		ON_CALL(*this, getLoad()).WillByDefault(Invoke(this, &AsyncWorkerMock::fetchLoad));

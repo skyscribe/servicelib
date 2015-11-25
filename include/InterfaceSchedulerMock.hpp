@@ -29,10 +29,11 @@ public:
         CallbackType& action)override{return isCallRegisteredAndTypesMatch_RVR(idStr, callType, action);}
     MOCK_METHOD3(isCallRegisteredAndTypesMatch_RVR, bool(const std::string&, const std::string&, CallbackType&));
 
-    virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& strand, Callable&& onDone) override{
-        invokeCall_RVR(cb, async, waitForDone, strand, onDone);
+    virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& id,
+            const std::string& strand, Callable&& onDone) override{
+        invokeCall_RVR(cb, async, waitForDone, id, strand, onDone);
     }
-    MOCK_METHOD5(invokeCall_RVR, bool(Callable, bool, bool, const std::string&, Callable));
+    MOCK_METHOD6(invokeCall_RVR, bool(Callable, bool, bool, const std::string&, const std::string&, Callable));
 };
 
 class SchedulerFixture : public ::testing::Test{

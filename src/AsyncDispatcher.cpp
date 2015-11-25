@@ -6,13 +6,13 @@
 
 using namespace std;
 
-bool AsyncDispatcher::scheduleJob(bool waitForDone, const std::string& strand,
-        Callable action, Callable onDone){
+bool AsyncDispatcher::scheduleJob(const std::string& name, Callable action, Callable onDone, bool waitForDone,
+        const std::string& strand){
     if (!waitForDone)
-        return getWorkerForSchedule(strand)->doJob(std::forward<Callable>(action),
+        return getWorkerForSchedule(strand)->doJob(name, std::forward<Callable>(action),
                 std::forward<Callable>(onDone));
     else
-        return getWorkerForSchedule(strand)->doSyncJob(std::forward<Callable>(action),
+        return getWorkerForSchedule(strand)->doSyncJob(name, std::forward<Callable>(action),
                 std::forward<Callable>(onDone));  
 }
 

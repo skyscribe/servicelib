@@ -21,8 +21,9 @@ public:
 
 	virtual void blockUntilReady();
 	virtual void stop();
-	virtual bool doJob(Callable call, Callable onDone);
-	virtual bool doSyncJob(Callable call, Callable onDone);
+	virtual bool doJob(const std::string& name, Callable call, Callable onDone);
+	virtual bool doSyncJob(const std::string& name, Callable call, Callable onDone);
+	virtual void cancelJobsFor(const std::string& name);
 
 	virtual size_t getLoad() {return outstandingJobs_;}
 	virtual std::thread::id getId() {return thread_.get_id();}

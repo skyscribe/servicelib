@@ -15,8 +15,9 @@ public:
 
 	MOCK_METHOD0(blockUntilReady, void());
 	MOCK_METHOD0(stop, void());
-	MOCK_METHOD2(doJob, bool(Callable, Callable));
-	MOCK_METHOD2(doSyncJob, bool(Callable, Callable));
+	MOCK_METHOD3(doJob, bool(const std::string&, Callable, Callable));
+	MOCK_METHOD3(doSyncJob, bool(const std::string&, Callable, Callable));
+	MOCK_METHOD1(cancelJobsFor, void(const std::string&));
 	MOCK_METHOD0(getLoad, size_t());
 	MOCK_METHOD0(getId, std::thread::id());
 

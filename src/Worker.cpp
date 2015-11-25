@@ -53,7 +53,7 @@ void runTheCall(Callable action, Callable onDone){
 		onDone();
 }
 
-bool AsyncWorker::doJob(Callable call, Callable onDone){
+bool AsyncWorker::doJob(const std::string& name, Callable call, Callable onDone){
 	{
 		std::lock_guard<std::mutex> lock(queueLock_);
 		calls_.push_back({call, onDone});
@@ -63,12 +63,12 @@ bool AsyncWorker::doJob(Callable call, Callable onDone){
 	return true;
 }
 
-bool AsyncWorker::doSyncJob(Callable call, Callable onDone){
+bool AsyncWorker::doSyncJob(const std::string& name, Callable call, Callable onDone){
 	bool finished = false;
 	mutex flagMutex;
 	condition_variable cond;
 	
-	doJob(std::forward<Callable>(call), [&]() -> bool{
+	doJob(name, std::forward<Callable>(call), [&]() -> bool{
 		if (onDone)
 			onDone();
 		std::lock_guard<mutex> lock(flagMutex);
@@ -101,4 +101,8 @@ void AsyncWorker::waitForOutstandingJobsToFinish(){
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		queueLock_.lock();
 	}	
+}
+
+void AsyncWorker::cancelJobsFor(const std::string& name){
+	
 }

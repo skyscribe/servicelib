@@ -67,13 +67,13 @@ bool InterfaceScheduler::isServiceRegistered(const std::string& idStr)const{
 	return actionMapping_.find(idStr) != actionMapping_.end();
 }
 
-bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, 
+bool InterfaceScheduler::invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& idStr, 
 		const std::string& strand, Callable&& onDone){
 	if (!async)
 		return syncWorker_->doJob(std::forward<Callable>(cb), std::forward<Callable>(onDone));
 	else
-		return asyncDispather_->scheduleJob(waitForDone, strand, std::forward<Callable>(cb),
-			std::forward<Callable>(onDone));
+		return asyncDispather_->scheduleJob(idStr, std::forward<Callable>(cb),
+				std::forward<Callable>(onDone), waitForDone, strand);
 }
 
 bool InterfaceScheduler::isCallRegisteredAndTypesMatch(const std::string& idStr,

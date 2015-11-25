@@ -12,7 +12,8 @@ public:
 
     virtual void start(size_t poolSize);
     virtual void stop();
-    virtual bool scheduleJob(bool waitForDone, const std::string& strand, Callable action, Callable onDone);
+    virtual bool scheduleJob(const std::string& name, Callable action, Callable onDone, bool waitForDone = false,
+            const std::string& strand = "");
     //Cancel all outstanding jobs for give service as idStr
     virtual void cancelJobsFor(const std::string& idStr);
 
