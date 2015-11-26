@@ -4,6 +4,7 @@
 #include <tuple>
 #include <cassert>
 #include <chrono>
+#include <algorithm>
 using namespace std;
 
 InterfaceScheduler* createTestScheduler(){
@@ -12,49 +13,88 @@ InterfaceScheduler* createTestScheduler(){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-const std::string serviceName = "fetchState";
-class ServiceImpl{
+double getFactorial(int n){
+    double ret = 1;
+    for (auto i = 1; i <= n; ++i)
+        ret *= i;
+    return ret;
+}
+const std::string serviceName = "calculate";
+class SubCalculator{
 public:
-    ServiceImpl(){
-        for (auto i = 1; i < 10; ++i)
-            data_[i] = 1 << i;
-        registerInterfaceFor<int>(serviceName, std::bind(&ServiceImpl::fetchState,
+    SubCalculator(){
+        registerInterfaceFor<int, int>(serviceName, std::bind(&SubCalculator::calculate,
             this, std::placeholders::_1));
-        cout << "register service:" << serviceName << endl;
+        //cout << "register service:" << serviceName << endl;
     }
 
-    bool fetchState(const ParamArgs<int>& p){
-        cout << "calling with " << get<0>(p) << endl;
+    bool calculate(const ParamArgs<int, int>& p){
+        double result = 0.0;
+        for (auto i = get<0>(p); i < get<1>(p); ++i){
+            result += 1.0/getFactorial(i);
+            //make this slow
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        std::lock_guard<std::mutex> guard(mutex_);
+        results_.push_back(result);
+        cout << "calculated as:" << result << endl;
         return true;
     }
 
+    std::vector<double> getResults()const{return results_;}
 private:
-    std::unordered_map<int, int> data_;
+    std::mutex mutex_;
+    std::vector<double> results_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-int main(int argc, char **argv)
-{   
-    getGlobalScheduler().start(1);
-    std::atomic<bool> stop(0);
-    std::unique_ptr<ServiceImpl> serv;
-
+std::thread startCalculator(atomic<bool>& stop, std::unique_ptr<SubCalculator>& serv){
     //start service asynchronously
     std::thread thr([&]{
-        cout << "Creating and binding service " << serviceName << endl;
-        serv.reset(new ServiceImpl());
-        cout << "serving..." << endl;
+        //cout << "Creating and binding service " << serviceName << endl;
+        serv.reset(new SubCalculator());
         while (!stop)
-            this_thread::sleep_for(std::chrono::milliseconds(5));
+            this_thread::sleep_for(std::chrono::milliseconds(10));
     });
+    return thr;   
+}
 
+void subscribeAndStart(atomic<int>& finished){
+    //calculated results will be stored in a list
+    auto onDone = [&]()->bool{
+        finished++;
+        return true;
+    };
     //subscribe and call
-    getGlobalScheduler().subscribeForRegistration(serviceName, []{
-        cout << "registered now..." << endl;
-        asyncCall(serviceName, 2);
-    });
+    getGlobalScheduler().subscribeForRegistration(serviceName, [&]{
+        //cout << "registered now..." << endl;
+        for (int i = 0; i < 4; ++i)
+            asyncCall(serviceName, std::forward<Callable>(onDone), i*10, (i+1)*10);
+    });  
+}
 
-    //exit all
+void waitForAllFinished(atomic<int>& finished, unique_ptr<SubCalculator>& serv){
+    //e = 1 + 1/1! + 1/2! + 1/3! + 1/4! + ... + 1/n!
+    while (finished != 4){
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    auto results = std::move(serv->getResults());
+    cout << "calculated e = " << std::accumulate(results.begin(), results.end(), 0.0) << endl;   
+}
+///////////////////////////////////////////////////////////////////////////////
+int main(int argc, char **argv)
+{
+    cout.precision(32);
+    getGlobalScheduler().start(4);
+
+    std::atomic<bool> stop(0);
+    std::atomic<int> finished(0);
+    std::unique_ptr<SubCalculator> serv;
+    thread thr = startCalculator(stop, serv);
+    subscribeAndStart(finished);
+    waitForAllFinished(finished, serv);
+
+    cout << "exiting..." << endl;
     stop = 1;
     thr.join();
     getGlobalScheduler().stop();

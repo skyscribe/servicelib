@@ -53,6 +53,16 @@ bool asyncCall(InterfaceScheduler& sched, const std::string& serviceId, const Ar
 }
 
 template <class ...Args>
+bool asyncCall(InterfaceScheduler& sched, const std::string& serviceId, Callable&& onDone, const Args& ... args){
+	return sched.interfaceCall(serviceId, createAsyncNonBlockProp(std::forward<Callable>(onDone)), args...);
+}
+
+template <class ...Args>
 bool asyncCall(const std::string& serviceId, const Args& ... args){
 	return asyncCall(getGlobalScheduler(), serviceId, args...);
+}
+
+template <class ...Args>
+bool asyncCall(const std::string& serviceId, Callable&& onDone, const Args& ... args){
+	return asyncCall(getGlobalScheduler(), serviceId, std::forward<Callable>(onDone), args...);
 }
