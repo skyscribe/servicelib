@@ -21,8 +21,8 @@ inline size_t profileFor(std::function<void()> call, const std::string& hint = "
 // on first call (lazy creation)
 InterfaceScheduler& getGlobalScheduler();
 //The default scheduler can be released explictly also
-void releaseDefaultScheduler();
-void setGlobalSchedulerPurpose(bool forTesting = false);
+void releaseGlobalScheduler();
+void setGlobalSchedulerAsMocked(bool mocked = false);
 
 template <class ... Args, class ActionType>
 inline void registerInterfaceFor(const std::string& idStr, ActionType action){

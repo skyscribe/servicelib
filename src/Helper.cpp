@@ -11,8 +11,8 @@ namespace{
     static bool defaultForTesting = false;
 }
 
-void setGlobalSchedulerPurpose(bool forTesting){
-    defaultForTesting = forTesting;
+void setGlobalSchedulerAsMocked(bool mocked){
+    defaultForTesting = mocked;
 }
 
 extern InterfaceScheduler* createTestScheduler();
@@ -32,7 +32,7 @@ InterfaceScheduler& getGlobalScheduler(){
     return *theScheduler;
 }
 
-void releaseDefaultScheduler(){
+void releaseGlobalScheduler(){
     if (created){
         std::lock_guard<std::mutex> guard(sharedMutex);
         delete theScheduler;

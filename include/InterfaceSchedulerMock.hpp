@@ -40,13 +40,13 @@ class SchedulerFixture : public ::testing::Test{
 protected:
     MockedInterfaceScheduler* sched_;
     virtual void SetUp() override{
-        releaseDefaultScheduler();
-        setGlobalSchedulerPurpose(true); //always reset for testing purpose
+        releaseGlobalScheduler();
+        setGlobalSchedulerAsMocked(true); //always reset for testing purpose
         MockedInterfaceScheduler& sched = dynamic_cast<MockedInterfaceScheduler&>(getGlobalScheduler());
         sched_ = &sched;
     }
 
     virtual void TearDown() override{
-        releaseDefaultScheduler();
+        releaseGlobalScheduler();
     }
 };
