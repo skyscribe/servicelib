@@ -23,8 +23,9 @@ const std::string serviceName = "calculate";
 class SubCalculator{
 public:
     SubCalculator(){
-        registerInterfaceFor<int, int>(serviceName, std::bind(&SubCalculator::calculate,
-            this, std::placeholders::_1));
+        registerInterfaceFor<int, int>(serviceName, [this](const auto& p){
+            return this->calculate(p);
+            });
         //cout << "register service:" << serviceName << endl;
     }
 
