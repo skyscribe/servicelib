@@ -28,6 +28,7 @@ void SchedulePoolTest::SetUp(){
 		lock_.lock();
 		threadMapping_.push_back({get<0>(p), this_thread::get_id()});
 		lock_.unlock();
+        return true;
 	});
 
 	profileFor([&]{
@@ -55,6 +56,7 @@ size_t SchedulePoolTest::scheduleAllJobs(atomic<int>& done, size_t jobCnt, const
 					if (onJobDone)
 						onJobDone();
 					done++;
+                    return true;
 				}, strand), getParam(i));
 	}, desc, false /*don't print*/);		
 }

@@ -58,6 +58,7 @@ TEST_F(AsyncDispatcherTest, cancelPendingJobs_allOfThemCancelled){
 		calledCounter++;
 		while(!jobDoneFlag)
 			std::this_thread::yield();
+        return true;
 	};
 	// all jobs in a strand in worker 1
 	for (auto i : {1,2,3})

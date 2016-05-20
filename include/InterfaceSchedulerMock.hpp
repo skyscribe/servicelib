@@ -31,7 +31,7 @@ public:
 
     virtual bool invokeCall(Callable&& cb, bool async, bool waitForDone, const std::string& id,
             const std::string& strand, Callable&& onDone) override{
-        invokeCall_RVR(cb, async, waitForDone, id, strand, onDone);
+        return invokeCall_RVR(cb, async, waitForDone, id, strand, onDone);
     }
     MOCK_METHOD6(invokeCall_RVR, bool(Callable, bool, bool, const std::string&, const std::string&, Callable));
 };
