@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
+
 # try to detect installed SDK if on LINSEE/build server/etc
-if(${CMAKE_HOST_SYSTEM_NAME} EQUAL CYGWIN)
-    set(sdkDetected OFF)
-    message("use native compiler by default, overriding by useSDK=ON")
-else()
-    set(lfsVersion "FB_PS_LFS_REL_2015_10_0083")
-    set(gccPrefix "/build/ltesdkroot/Platforms/LINUX/${lfsVersion}/sdk/bld-tools/x86_64-pc-linux-gnu")
+set(lfsVersion "FB_PS_LFS_REL_2015_10_0083")
+set(gccPrefix "/build/ltesdkroot/Platforms/LINUX/${lfsVersion}/sdk/bld-tools/x86_64-pc-linux-gnu")
+if (EXISTS ${gccPrefix})
     set(CMAKE_C_COMPILER ${gccPrefix}/bin/gcc)
     set(CMAKE_CXX_COMPILER ${gccPrefix}/bin/g++)
     set(sdkDetected ON)
     message("use sdk(${lfsVersion}) to build by default, overriding by useSDK=OFF")
+else()
+    set(sdkDetected OFF)
+    message("use native compiler by default, overriding by useSDK=ON")
 endif()
 option(useSDK ${sdkDetected})
 
