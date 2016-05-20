@@ -7,7 +7,8 @@ dist: trusty
 language: cpp
 matrix:
   include:
-    - compiler: gcc
+    - os: linux
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -18,7 +19,8 @@ matrix:
             - cmake
             - cmake-data
       env: COMPILER=g++-5
-    - compiler: clang
+    - os: linux
+      compiler: clang
       addons:
         apt:
           sources:
@@ -32,6 +34,7 @@ matrix:
       env: COMPILER=clang++-3.8
 
 script:
+  - export CXX=$COMPILER
   - mkdir bld
   - cd bld/; cmake -D useSDK=OFF ../
   - make runUT
