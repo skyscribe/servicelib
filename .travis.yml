@@ -1,3 +1,7 @@
+#We need a decent ubuntu dist
+sudo: required
+dist: trusty
+
 language: cpp
 compiler: 
     - clang
@@ -6,10 +10,15 @@ addons:
     apt:
         sources:
             - george-edison55-precise-backports #cmake 3
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.8
         packages:
+            - gcc-5
+            - g++-5
+            - clang-3.8
             - cmake
             - cmake-data
 script:
     - mkdir bld
-    - cd bld/; cmake -DuseSDK=OFF ../
+    - cd bld/; cmake -D useSDK=OFF ../
     - make runUT
