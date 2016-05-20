@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/skyscribe/servicelib.png)](https://travis-ci.org/skyscribe/servicelib)
+
 # Overview
 A library providing facilities to register interface calls and for clients (interface users) to schedule a call asynchronously or synchrously. Typically an interface **shall be registered firstly** with the actual action (can be a closure wrapped by lambda) for later call; a client can invoke the call by specifing various properties as specified below.
 
