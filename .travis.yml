@@ -15,7 +15,6 @@ matrix:
           packages:
             - g++-5
       env: COMPILER=g++-5
-
     - compiler: clang
       addons:
         apt:
@@ -25,7 +24,6 @@ matrix:
           packages:
             - clang-3.8
       env: COMPILER=clang++-3.8
-
 # cmake
 addons:
   apt:
