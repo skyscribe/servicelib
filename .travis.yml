@@ -2,22 +2,38 @@
 sudo: required
 dist: trusty
 
+#Modern cpp settings from http://genbattle.bitbucket.org/blog/2016/01/17/c++-travis-ci/
 language: cpp
 compiler: 
-    - clang
-    - gcc
+    - include:
+        - compiler: gcc 
+          addons:
+              apt:
+                  sources: 
+                    - ubuntu-toolchain-r-test
+                  packages:
+                    - g++-5
+           env: COMPILER=g++-5
+         - compiler: clang
+           addons:
+              apt:
+                  sources: 
+                    - ubuntu-toolchain-r-test
+                    - llvm-toolchain-precise-3.8
+                  packages:
+                    - clang-3.8
+            env: COMPILER=clang++-3.8
+
+#cmake
 addons:
     apt:
         sources:
-            - george-edison55-precise-backports #cmake 3
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.8
+            - george-edison55-precise-backports
         packages:
-            - gcc-5
-            - g++-5
-            - clang-3.8
-            - cmake
             - cmake-data
+            - cmake
+
+
 script:
     - mkdir bld
     - cd bld/; cmake -D useSDK=OFF ../
