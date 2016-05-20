@@ -19,6 +19,7 @@ public:
 			<< get<0>(args) << "," << get<1>(args)
 			<< std::endl;
 		result_ = strm.str();
+        return true;
 	}
 
 	bool doSomethingB(const ParamArgs<bool, int>& args){
@@ -27,6 +28,7 @@ public:
 			<< std::get<0>(args.parameters) << "," << std::get<1>(args.parameters)
 			<< std::endl;
 		result_ = strm.str();
+        return true;
 	}
 
 	std::string getResult(){return result_;}

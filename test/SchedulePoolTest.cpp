@@ -17,7 +17,7 @@ using ::testing::Invoke;
 using ::testing::ElementsAre;
 using ::testing::_;
 
-auto getExponentOf = [&](int i) -> int{ return 1 << i; };
+auto getExponentOf = [](int i) -> int{ return 1 << i; };
 
 TEST_F(SchedulePoolTest, schedulePoolSizeJobs_jobsDistributedEvenly){
 	const size_t jobs = poolSize_;

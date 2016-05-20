@@ -11,6 +11,7 @@ TEST_F(IntegrationTest, callSyncInteface_calledWithinSameContextAsCaller){
 	thread::id ctxId;
 	CallProperty prop = {false, true, [&]() -> bool{
 		ctxId = this_thread::get_id();
+        return true;
 	}, ""};
 	sched_.interfaceCall("doSomethingA", std::forward<CallProperty>(prop), 2, hint);
 
@@ -29,6 +30,7 @@ TEST_F(IntegrationTest, callAsyncIntefaceAndBlock_calledUnderDifferentContextWit
 			ctxId = this_thread::get_id();		
 			//this_thread::sleep_for(chrono::milliseconds(consumedMs));
 			//cout << "SyncJob callback happen!" << endl;
+            return true;
 		}, ""};
 		sched_.interfaceCall("doSomethingB", std::forward<CallProperty>(prop), true, 133);
 	});
@@ -45,6 +47,7 @@ TEST_F(IntegrationTest, callAsyncInterfaceInDefaultMode_calledAsynchronouslyWith
 	sched_.interfaceCall("doSomethingB", createAsyncNonBlockProp([&]()->bool{
 		//std::cout << "Calling B asynchronously done" << std::endl;
 		called = true;
+        return true;
 	}), false, 131);
 
 	while ((!called))
@@ -63,12 +66,14 @@ TEST_F(IntegrationTest, asyncCallAfterPreviousCallRunning_AsyncCallDontBlock){
 			while ((*var) != 1)
 				this_thread::yield();
 			*var = 2;
+            return true;
 		}), false, 131);
 
 		sched_.interfaceCall("doSomethingB", createAsyncNonBlockProp([=]() -> bool{
 			//cout << "calling1B, var=" << *var << endl;
 			EXPECT_EQ(*var, 2);
 			*var = 3;
+            return true;
 		}), false, 111);
 	});
 
