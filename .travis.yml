@@ -1,0 +1,15 @@
+language: cpp
+compiler: 
+    - clang
+    - gcc
+addons:
+    apt:
+        sources:
+            - george-edison55-precise-backports #cmake 3
+        packages:
+            - cmake
+            - cmake-data
+script:
+    - mkdir bld
+    - cd bld/; cmake ../
+    - make runUT
