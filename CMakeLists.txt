@@ -21,12 +21,10 @@ set (CMAKE_CXX_STANDARD 14)
 endif()
 
 #google test/mock
-set(gtestDir ${CMAKE_CURRENT_SOURCE_DIR})
-add_library(gtest STATIC ${gtestDir}/gtest/src/gtest-all.cc ${gtestDir}/gmock/src/gmock-all.cc) 
-include_directories(SYSTEM PUBLIC ${gtestDir}/gtest/include ${gtestDir}/gmock/include)
-include_directories(PUBLIC ${gtestDir}/gtest ${gtestDir}/gmock)
-include_directories(PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(PUBLIC SYSTEM gtest)
+add_library(gtest STATIC gtest/gmock-gtest-all.cc)
 
+include_directories(include)
 set(libSrcs
     src/InterfaceScheduler.cpp
     src/Worker.cpp
