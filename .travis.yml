@@ -37,4 +37,4 @@ script:
   - export CXX=$COMPILER
   - mkdir bld
   - cd bld/; cmake -D useSDK=OFF ../
-  - make runUT
+  - make runStress
